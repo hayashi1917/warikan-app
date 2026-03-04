@@ -134,7 +134,6 @@ def get_group(group_id: int) -> Optional[Dict[str, Any]]:
 
 # グループ新規作成とリーダのユーザ作成
 def create_group_with_leader(group_name: str, leader_user_name: str, leader_password: str) -> Dict[str, Any]:
-    ensure_schema()
 
     with mysql_connection() as conn:
         with conn.cursor() as cur:
@@ -211,6 +210,16 @@ def create_payment(
     exchange_rate: float,
     splits: List[Dict[str, Any]],
 ) -> int:
+    normalized_splits = list(splits)
+    has_payer_split = any(split.get("beneficiary_user_name") == login_user_name for split in normalized_splits)
+    if not has_payer_split:
+        normalized_splits.append(
+            {
+                "beneficiary_user_name": login_user_name,
+                "amount": 0,
+            }
+        )
+
     with mysql_connection() as conn:
         with conn.cursor() as cur:
             # 概要の登録
@@ -223,7 +232,7 @@ def create_payment(
             )
             payment_id = int(cur.lastrowid)
             # 詳細の登録
-            for split in splits:
+            for split in normalized_splits:
                 cur.execute(
                     """
                     INSERT INTO `payment_splits` (payment_id, group_id, beneficiary_user_name, amount)
