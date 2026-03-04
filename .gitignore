@@ -1,0 +1,78 @@
+# =========================
+# OS / Editor
+# =========================
+.DS_Store
+Thumbs.db
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# Secrets / Env
+# =========================
+.env
+.env.*
+*.env
+*.key
+*.pem
+
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtualenv
+.venv/
+venv/
+ENV/
+env/
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.cache/
+.coverage
+coverage.xml
+htmlcov/
+*.log
+
+# =========================
+# Poetry
+# =========================
+# poetry.lock は基本コミットする（固定化のため）ので無視しない
+# poetryのローカル設定があれば無視
+.poetry/
+
+# =========================
+# FastAPI / Uvicorn
+# =========================
+uvicorn.log
+*.sqlite3
+
+# =========================
+# Node / Frontend (将来導入しても安全)
+# =========================
+node_modules/
+dist/
+build/
+.npm/
+.yarn/
+.pnpm-store/
+
+# =========================
+# Docker
+# =========================
+*.pid
+docker-compose.override.yml
+
+# =========================
+# MySQL data (重要: 実DBファイルは絶対に管理しない)
+# =========================
+backend/mysql/
+# もし空ディレクトリを残したいなら backend/mysql/.gitkeep を置いて、下を有効化
+#!backend/mysql/.gitkeep
