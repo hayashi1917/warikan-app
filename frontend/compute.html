@@ -89,7 +89,7 @@
     // ログインしていない場合は戻す
     if (!CURRENT_GROUP || !CURRENT_USER) {
         alert("ログイン情報がありません。TOPページに戻ります。");
-        //window.location.href = "index.html"; 
+        window.location.href = "index.html"; 
     }
 
     document.getElementById('display-user').innerText = `User: ${CURRENT_USER}`;
