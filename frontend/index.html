@@ -1,19 +1,129 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <meta charset = "utf-8">
-        <title>
-            Payment manegement
-        </title>
-    </head>
-    
-    <body>
- 
-    <h1>Links</h1>
+<html lang="ja">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FairShare Smart Payment</title>
+    <style>
+        :root {
+            /* ダークモードの階層表現 */
+            --bg-base: #0a0a0a;       /* 最背面：深い黒 */
+            --bg-surface: #1a1a1a;    /* カード面：少し明るい黒 */
+            --bg-elevated: #2a2a2a;   /* ホバー時など：さらに明るいグレー */
+            
+            /* アクセント */
+            --accent-blue: #007AFF;   /* 清潔感のある青 */
+            --text-main: #ffffff;
+            --text-sub: #a0a0a0;
+            --border: #333333;
+        }
 
-        <a href="register_group.html">Register Group</a>
-        <a href="join_group.html">Join Group</a>
-        <a href="login.html">login</a>
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
 
-    </body>
+        .container {
+            background-color: var(--bg-surface);
+            padding: 40px 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            border: 1px solid var(--border);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 10px 0;
+            background: linear-gradient(135deg, #ffffff 0%, #a0a0a0 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        .tagline {
+            color: var(--text-sub);
+            font-size: 0.9rem;
+            margin-bottom: 40px;
+        }
+
+        .nav-links {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .btn {
+            display: block;
+            text-decoration: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.2s ease;
+        }
+
+        /* メインアクション：ログイン */
+        .btn-login {
+            background-color: var(--accent-blue);
+            color: white;
+            border: none;
+        }
+
+        .btn-login:hover {
+            filter: brightness(1.2);
+            transform: translateY(-2px);
+        }
+
+        /* サブアクション：グループ操作 */
+        .btn-group {
+            background-color: var(--bg-elevated);
+            color: var(--text-main);
+            border: 1px solid var(--border);
+        }
+
+        .btn-group:hover {
+            background-color: #3a3a3a;
+            border-color: var(--text-sub);
+        }
+
+        /* PCでのレイアウト調整 */
+        @media (min-width: 480px) {
+            .sub-actions {
+                display: flex;
+                gap: 12px;
+            }
+            .sub-actions .btn {
+                flex: 1;
+                font-size: 0.85rem;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>fairshare</h1>
+        <div class="tagline">旅の精算を、もっと正確に、もっと安全に。</div>
+
+        <div class="nav-links">
+            <a href="login.html" class="btn btn-login">ログイン</a>
+            
+            <div class="sub-actions">
+                <a href="register_group.html" class="btn btn-group">グループ作成</a>
+                <a href="join_group.html" class="btn btn-group">グループ参加</a>
+            </div>
+        </div>
+    </div>
+
+</body>
 </html>
