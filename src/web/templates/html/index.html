@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Current Time</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/main.css') }}?v={{ static_version }}">
+</head>
+<body>
+    <main class="clock-card">
+        <h1>現在時刻</h1>
+        <p id="clock-time" class="clock-time" aria-live="polite">--:--:--</p>
+        <p id="clock-date" class="clock-date">----/--/--</p>
+        <p id="clock-zone" class="clock-zone">---</p>
+        <p id="clock-status" class="clock-status">時刻を取得中...</p>
+    </main>
+    <script src="{{ url_for('static', path='js/main.js') }}?v={{ static_version }}"></script>
+</body>
+</html>
