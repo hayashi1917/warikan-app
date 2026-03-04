@@ -122,28 +122,57 @@
 
     <div class="container">
         <h2>グループ新規作成</h2>
-
-        <form action="{{/api/create_group}}" method="POST" class="form-group">
-            <input type="text" name="group_name" id="GroupID" placeholder="グループID (例: summer-trip-2024)" required>
-            <input type="text" name="user_name" id="UserID" placeholder="あなたのユーザーネーム" required>
-            <input type="password" name="password" id="UserPass" placeholder="パスワード" required>
-            
-            <button type="submit" class="RGbtn">Register Group</button>
+        <form id ="createGroupForm" class= "form-group">
+        <input type="text" name = "group_name"id="GroupID" placeholder="GroupID">
+        <input type="text" name = "user_name" id="UserID" placeholder="UserID">
+        <input type="password" id="UserPass" placeholder="Password">
+        <button id="RG_button" class="RGbtn">Register Group</button>
         </form>
 
-        {% if error %}
-            <div class="error-msg">{{ error }}</div>
-        {% endif %}
+</div>
 
-        {% if success %}
-            <script>
-                localStorage.setItem('currentGroup', '{{ group_id }}');
-                localStorage.setItem('currentUser', '{{ user_id }}');
-                // 成功時に自動で遷移させる場合は以下をコメントイン
-                // window.location.href = "/compute.html";
-            </script>
-        {% endif %}
-    </div>
+<script>
+    document.getElementById('createGroupForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); // デフォルトのページ遷移を防止
 
+    const groupID = document.getElementById('GroupID').value;
+    const userID = document.getElementById('UserID').value;
+    const password = document.getElementById('UserPass').value;
+    const messageArea = document.getElementById('messageArea');
+
+    try {
+        const response = await fetch('/api/create_group', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                group_name: groupID,
+                user_name: userID,
+                password: password
+            })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            // 成功時の処理 (Jinja2の {% if success %} 相当)
+            localStorage.setItem('currentGroup', data.group_id);
+            localStorage.setItem('currentUser', data.user_id);
+            
+            messageArea.innerHTML = `<div class="success-msg">グループ作成に成功しました！</div>`;
+            
+            // 遷移させる場合はこちら
+            // window.location.href = "/compute.html";
+        } else {
+            // 失敗時の処理 (Jinja2の {% if error %} 相当)
+            messageArea.innerHTML = `<div class="error-msg">${data.error || 'エラーが発生しました'}</div>`;
+        }
+    } catch (err) {
+        console.error('通信エラー:', err);
+        messageArea.innerHTML = `<div class="error-msg">サーバーとの通信に失敗しました</div>`;
+    }
+}
+</script>
 </body>
 </html>
