@@ -1,7 +1,7 @@
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, HTTPException, Query, Request, status
+from fastapi import Depends, FastAPI, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
@@ -80,6 +80,53 @@ async def index(request: Request):
     )
 
 
+@app.get("/join_group.html", response_class=HTMLResponse)
+@app.get("/join-group", response_class=HTMLResponse)
+async def join_group(request: Request):
+    return templates.TemplateResponse(
+        "html/join_group.html",
+        {
+            "request": request,
+            "static_version": STATIC_VERSION,
+        },
+    )
+
+
+@app.get("/register_group.html", response_class=HTMLResponse)
+@app.get("/register-group", response_class=HTMLResponse)
+async def register_group(request: Request):
+    return templates.TemplateResponse(
+        "html/register_group.html",
+        {
+            "request": request,
+            "static_version": STATIC_VERSION,
+        },
+    )
+
+
+@app.get("/login.html", response_class=HTMLResponse)
+@app.get("/login", response_class=HTMLResponse)
+async def login_html(request: Request):
+    return templates.TemplateResponse(
+        "html/login.html",
+        {
+            "request": request,
+            "static_version": STATIC_VERSION,
+        },
+    )
+
+
+@app.get("/compute.html", response_class=HTMLResponse)
+async def compute(request: Request):
+    return templates.TemplateResponse(
+        "html/compute.html",
+        {
+            "request": request,
+            "static_version": STATIC_VERSION,
+        },
+    )
+
+
 @app.get("/api/current-time")
 async def current_time():
     now = datetime.now().astimezone()
@@ -135,6 +182,104 @@ async def create_group_user(payload: UserCreateRequest):
         message = str(exc)
         code = 409 if "already belongs to group" in message else 400
         raise HTTPException(status_code=code, detail=message)
+
+
+@app.post("/api/group", response_class=HTMLResponse)
+async def join_group_from_form(
+    request: Request,
+    groupId: int = Form(..., gt=0),
+    userId: str = Form(..., min_length=1, max_length=50),
+    password: str = Form(..., min_length=8, max_length=128),
+):
+    try:
+        if not get_group(groupId):
+            return templates.TemplateResponse(
+                "html/join_group.html",
+                {"request": request, "static_version": STATIC_VERSION, "error": "Group not found"},
+                status_code=404,
+            )
+        if get_user(groupId, userId):
+            return templates.TemplateResponse(
+                "html/join_group.html",
+                {"request": request, "static_version": STATIC_VERSION, "error": "User already exists in this group"},
+                status_code=409,
+            )
+        create_user(groupId, userId, password)
+        return templates.TemplateResponse(
+            "html/join_group.html",
+            {
+                "request": request,
+                "static_version": STATIC_VERSION,
+                "success": True,
+                "group_id": groupId,
+                "user_id": userId,
+            },
+        )
+    except ValueError as exc:
+        return templates.TemplateResponse(
+            "html/join_group.html",
+            {"request": request, "static_version": STATIC_VERSION, "error": str(exc)},
+            status_code=400,
+        )
+
+
+@app.post("/api/register-group", response_class=HTMLResponse)
+async def register_group_from_form(
+    request: Request,
+    groupName: str = Form(..., min_length=1, max_length=50),
+    leaderUserName: str = Form(..., min_length=1, max_length=50),
+    leaderPassword: str = Form(..., min_length=8, max_length=128),
+):
+    try:
+        created = create_group_with_leader(
+            group_name=groupName,
+            leader_user_name=leaderUserName,
+            leader_password=leaderPassword,
+        )
+        return templates.TemplateResponse(
+            "html/register_group.html",
+            {
+                "request": request,
+                "static_version": STATIC_VERSION,
+                "success": True,
+                "group_id": created["group_id"],
+                "user_id": created["leader_user_name"],
+            },
+        )
+    except ValueError as exc:
+        message = str(exc)
+        status_code = 409 if "already exists" in message else 400
+        return templates.TemplateResponse(
+            "html/register_group.html",
+            {"request": request, "static_version": STATIC_VERSION, "error": message},
+            status_code=status_code,
+        )
+
+
+@app.post("/api/login-form", response_class=HTMLResponse)
+async def login_from_form(
+    request: Request,
+    groupId: int = Form(..., gt=0),
+    userId: str = Form(..., min_length=1, max_length=50),
+    password: str = Form(..., min_length=8, max_length=128),
+):
+    user = authenticate_user(groupId, userId, password)
+    if not user:
+        return templates.TemplateResponse(
+            "html/login.html",
+            {"request": request, "static_version": STATIC_VERSION, "error": "Incorrect group_id, user_name, or password"},
+            status_code=401,
+        )
+    return templates.TemplateResponse(
+        "html/login.html",
+        {
+            "request": request,
+            "static_version": STATIC_VERSION,
+            "success": True,
+            "group_id": groupId,
+            "user_id": userId,
+        },
+    )
 
 
 @app.post("/api/auth/login")

@@ -2,16 +2,16 @@
 <html>
     <head>
         <meta charset="utf-8">
-        <title>join group</title>
+        <title>register group</title>
     </head>
     <body>
-        <form action="{{/join_group_url}}" method="POST">
+        <form action="{{ url_for('register_group_from_form') }}" method="POST">
             
-            <input type="text" name="groupId" id="GroupID" placeholder="GroupID" required>
-            <input type="text" name="userId" id="UserID" placeholder="UserID" required>
-            <input type="password" name="password" id="UserPass" placeholder="Password" required>
+            <input type="text" name="groupName" id="GroupName" placeholder="Group Name" required>
+            <input type="text" name="leaderUserName" id="LeaderUserName" placeholder="Leader User Name" required>
+            <input type="password" name="leaderPassword" id="LeaderPass" placeholder="Leader Password" required>
             
-            <button type="submit" class="JGbtn">Join Group</button>
+            <button type="submit" class="RGbtn">Register Group</button>
             
         </form>
         {% if error %}
