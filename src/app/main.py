@@ -70,19 +70,18 @@ async def startup() -> None:
 
 
 @app.get("/", response_class=HTMLResponse)
-async def index(request: Request, current_user: CurrentUser = Depends(get_current_user)):
+async def index(request: Request):
     return templates.TemplateResponse(
         "html/index.html",
         {
             "request": request,
             "static_version": STATIC_VERSION,
-            "current_user": current_user.model_dump(),
         },
     )
 
 
 @app.get("/api/current-time")
-async def current_time(current_user: CurrentUser = Depends(get_current_user)):
+async def current_time():
     now = datetime.now().astimezone()
     return {
         "iso": now.isoformat(),
@@ -90,7 +89,6 @@ async def current_time(current_user: CurrentUser = Depends(get_current_user)):
         "time": now.strftime("%H:%M:%S"),
         "timezone": now.strftime("%Z"),
         "utc_offset": now.strftime("%z"),
-        "requested_by": current_user.model_dump(),
     }
 
 
