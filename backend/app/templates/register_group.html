@@ -5,7 +5,7 @@
         <title>register group</title>
     </head>
     <body>
-        <form action="{{/register_group_url}}" method="POST">
+        <form action="{{url_for('register.register_group')}}" method="POST">
             
             <input type="text" name="groupId" id="GroupID" placeholder="GroupID" required>
             <input type="text" name="userId" id="UserID" placeholder="UserID" required>
@@ -23,7 +23,7 @@
                 localStorage.setItem('currentGroup', '{{ group_id }}');
                 localStorage.setItem('currentUser', '{{ user_id }}');
                 
-                window.location.href = "/compute.html";
+                window.location.href = "{{url_for('payment')}}";
             </script>
         {% endif %}
     </body>

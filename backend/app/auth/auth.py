@@ -15,6 +15,17 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("JWT_EXPIRE_MINUTES", "60"))
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
 
+# パスワードハッシュ関数
+def hash_password(password: str) -> str:
+    return pwd_context.hash(password)
+
+# パスワード認証関数
+def verify_password(password: str, password_hash: str) -> bool:
+    if password_hash.startswith("$2"):
+        return pwd_context.verify(password, password_hash)
+    legacy_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
+    return hmac.compare_digest(password_hash, legacy_hash)
+
 def create_access_token(group_id: int, user_name: str, expires_minutes: Optional[int] = None) -> str:
     exp_minutes = expires_minutes or ACCESS_TOKEN_EXPIRE_MINUTES
     expire = datetime.now(timezone.utc) + timedelta(minutes=exp_minutes)

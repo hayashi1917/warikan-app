@@ -9,7 +9,7 @@ router = APIRouter(
     tags=["payment"],
 )
 
-@router.get("/")
+@router.get("/", name="payment")
 def payment(request: Request):
     return templates.TemplateResponse("compute.html", {"request": request})
 

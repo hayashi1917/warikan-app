@@ -9,6 +9,6 @@ router = APIRouter(
     tags=["home"],
 )
 
-@router.get("/")
+@router.get("/", name="home")
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})

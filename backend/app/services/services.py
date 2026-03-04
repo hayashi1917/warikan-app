@@ -61,3 +61,52 @@ __all__ = [
     "create_payment",
     "fetch_frankfurter_rates",
 ]
+
+# 支払いの作成
+def create_payment(
+    group_id: int,
+    login_user_name: str,
+    title: str,
+    amount_total: float,
+    currency_code: str,
+    exchange_rate: float,
+    splits: List[Dict[str, Any]],
+) -> int:
+    with mysql_connection() as conn:
+        with conn.cursor() as cur:
+            # 概要の登録
+            cur.execute(
+                """
+                INSERT INTO `payments` (group_id, paid_by_user_name, title, amount_total, currency_code, exchange_rate)
+                VALUES (%s, %s, %s, %s, %s, %s)
+                """,
+                (group_id, login_user_name, title, amount_total, currency_code, exchange_rate),
+            )
+            payment_id = int(cur.lastrowid)
+            # 詳細の登録
+            for split in splits:
+                cur.execute(
+                    """
+                    INSERT INTO `payment_splits` (payment_id, group_id, beneficiary_user_name, amount)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (payment_id, group_id, split["beneficiary_user_name"], split["amount"]),
+                )
+        conn.commit()
+    return payment_id
+
+# 支払い承認
+def authenticate_payment_by_current_user(group_id: int, payment_id: int, current_user_name: str) -> bool:
+    with mysql_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE `payment_splits`
+                SET approved = TRUE
+                WHERE payment_id = %s AND group_id = %s AND beneficiary_user_name = %s
+                """,
+                (payment_id, group_id, current_user_name),
+            )
+            updated_rows = cur.rowcount
+            conn.commit()
+    return updated_rows > 0
