@@ -123,9 +123,9 @@
     <div class="container">
         <h2>ログイン</h2>
 
-        <form action="{{/login_url}}" method="POST" class="form-group">
-            <input type="text" name="groupId" id="GroupID" placeholder="グループID (例: summer-trip-2024)" required>
-            <input type="text" name="userId" id="UserID" placeholder="あなたのユーザーネーム" required>
+        <form action="{{/api/login}}" method="POST" class="form-group">
+            <input type="text" name="group_name" id="GroupID" placeholder="グループID (例: summer-trip-2024)" required>
+            <input type="text" name="user_name" id="UserID" placeholder="あなたのユーザーネーム" required>
             <input type="password" name="password" id="UserPass" placeholder="パスワード" required>
             
             <button type="submit" class="RGbtn">Join Group</button>
