@@ -71,7 +71,9 @@ class UserCreateRequest(BaseModel):
 async def startup() -> None:
     ensure_schema()
 
+
 # メイン画面の表示，htmlファイル割り当て
+@app.get("/index.html", response_class=HTMLResponse)
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
     return templates.TemplateResponse(
@@ -81,6 +83,7 @@ async def index(request: Request):
             "static_version": STATIC_VERSION,
         },
     )
+
 
 # ユーザ登録画面の表示，htmlファイル割り当て
 @app.get("/join_group.html", response_class=HTMLResponse)
@@ -94,6 +97,7 @@ async def join_group(request: Request):
         },
     )
 
+
 # グループ登録画面の表示，htmlファイル割り当て
 @app.get("/register_group.html", response_class=HTMLResponse)
 @app.get("/register-group", response_class=HTMLResponse)
@@ -105,6 +109,7 @@ async def register_group(request: Request):
             "static_version": STATIC_VERSION,
         },
     )
+
 
 # ログイン画面の表示、htmlファイル割り当て
 @app.get("/login.html", response_class=HTMLResponse)
@@ -118,8 +123,10 @@ async def login_html(request: Request):
         },
     )
 
+
 # 計算画面の表示、htmlファイル割り当て
 @app.get("/compute.html", response_class=HTMLResponse)
+@app.get("/compute", response_class=HTMLResponse)
 async def compute(request: Request):
     return templates.TemplateResponse(
         "html/compute.html",
@@ -128,6 +135,7 @@ async def compute(request: Request):
             "static_version": STATIC_VERSION,
         },
     )
+
 
 # 現在時刻の取得API(テスト用)
 @app.get("/api/current-time")
@@ -140,6 +148,7 @@ async def current_time():
         "timezone": now.strftime("%Z"),
         "utc_offset": now.strftime("%z"),
     }
+
 
 # 為替情報取得API
 @app.get("/api/exchange-rate")
@@ -154,37 +163,6 @@ async def exchange_rate(
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"Failed to fetch exchange rates: {exc}")
 
-# グループ作成API
-@app.post("/api/groups")
-async def create_group(payload: GroupCreateRequest):
-    try:
-        return {
-            "created": True,
-            "group": create_group_with_leader(
-                group_name=payload.group_name,
-                leader_user_name=payload.leader_user_name,
-                leader_password=payload.leader_password,
-            ),
-        }
-    except ValueError as exc:
-        message = str(exc)
-        code = 409 if "already exists" in message else 400
-        raise HTTPException(status_code=code, detail=message)
-
-# グループにユーザ登録API
-@app.post("/api/users")
-async def create_group_user(payload: UserCreateRequest):
-    try:
-        if not get_group(payload.group_id):
-            raise HTTPException(status_code=404, detail="Group not found")
-        if get_user(payload.group_id, payload.user_name):
-            raise HTTPException(status_code=409, detail="User already exists in this group")
-        create_user(payload.group_id, payload.user_name, payload.password)
-        return {"created": True, "group_id": payload.group_id, "user_name": payload.user_name}
-    except ValueError as exc:
-        message = str(exc)
-        code = 409 if "already belongs to group" in message else 400
-        raise HTTPException(status_code=code, detail=message)
 
 # ブラウザからのグループ参加(ユーザ登録)API
 @app.post("/api/group", response_class=HTMLResponse)
@@ -227,6 +205,7 @@ async def join_group_from_form(
             status_code=400,
         )
 
+
 # ブラウザからのグループ新規作成API
 @app.post("/api/register-group", response_class=HTMLResponse)
 async def register_group_from_form(
@@ -262,6 +241,7 @@ async def register_group_from_form(
             status_code=status_code,
         )
 
+
 # ブラウザからのログインAPI
 @app.post("/api/login-form", response_class=HTMLResponse)
 async def login_from_form(
@@ -290,6 +270,7 @@ async def login_from_form(
         },
     )
 
+
 # ログイン認証。bearerトークンを発行するAPI
 @app.post("/api/auth/login")
 async def login(payload: LoginRequest):
@@ -304,44 +285,6 @@ async def login(payload: LoginRequest):
     token = create_access_token(group_id=payload.group_id, user_name=payload.user_name)
     return {"access_token": token, "token_type": "bearer"}
 
-# ID:"グループID:ユーザ名"，PW:"ユーザパスワード"でログインするAPI
-@app.post("/api/auth/token")
-async def login_for_swagger(form_data: OAuth2PasswordRequestForm = Depends()):
-    try:
-        group_id_raw, user_name = form_data.username.split(":", 1)
-        group_id = int(group_id_raw)
-    except Exception as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="username must be formatted as '<group_id>:<user_name>'",
-        ) from exc
-
-    if group_id <= 0 or not user_name:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="username must be formatted as '<group_id>:<user_name>'",
-        )
-
-    user = authenticate_user(group_id, user_name, form_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect group_id, user_name, or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    token = create_access_token(group_id=group_id, user_name=user_name)
-    return {"access_token": token, "token_type": "bearer"}
-
-# bearerを用いたログインユーザ情報取得API
-@app.get("/api/auth/me")
-async def me(
-    group_id: int = Query(..., gt=0, description="Target group ID"),
-    current_user: CurrentUser = Depends(get_current_user),
-):
-    if group_id != current_user.group_id:
-        raise HTTPException(status_code=403, detail="group_id does not match your login session")
-    return current_user.model_dump()
 
 # 支払いの作成API
 @app.post("/api/payment")
@@ -369,6 +312,7 @@ async def payment_create(payload: PaymentCreateRequest, current_user: CurrentUse
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+# 支払い一覧の取得API
 @app.get("/api/payments")
 async def payment_list(
     group_id: int = Query(..., alias="groupID", gt=0),
@@ -438,6 +382,8 @@ async def get_group_users(group_id: int, current_user: CurrentUser = Depends(get
     rows = get_users(group_id)
     return {"users": [row["user_name"] for row in rows]}
 
+
+# 支払いの計算API
 @app.get("/api/create-matrix")
 async def create_matrix_endpoint(
     group_id: int = Query(..., alias="groupID", gt=0),

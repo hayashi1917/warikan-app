@@ -100,9 +100,11 @@ def ensure_schema() -> None:
                 cur.execute(q)
         conn.commit()
 
+
 # パスワードハッシュ関数
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
+
 
 # パスワード認証関数
 def verify_password(password: str, password_hash: str) -> bool:
@@ -111,10 +113,12 @@ def verify_password(password: str, password_hash: str) -> bool:
     legacy_hash = hashlib.sha256(password.encode("utf-8")).hexdigest()
     return hmac.compare_digest(password_hash, legacy_hash)
 
+
 # グループ作成
 def create_group(cur: pymysql.cursors.Cursor, group_name: str) -> int:
     cur.execute("INSERT INTO `groups` (group_name) VALUES (%s)", (group_name,))
     return int(cur.lastrowid)
+
 
 # グループidからグループ名を取得
 def get_group(group_id: int) -> Optional[Dict[str, Any]]:
@@ -131,6 +135,7 @@ def get_group(group_id: int) -> Optional[Dict[str, Any]]:
             )
             row = cur.fetchone()
     return row
+
 
 # グループ新規作成とリーダのユーザ作成
 def create_group_with_leader(group_name: str, leader_user_name: str, leader_password: str) -> Dict[str, Any]:
