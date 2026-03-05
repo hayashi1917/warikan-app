@@ -22,6 +22,7 @@
             <script>
                 localStorage.setItem('currentGroup', '{{ group_id }}');
                 localStorage.setItem('currentUser', '{{ user_id }}');
+                localStorage.setItem('accessToken', `{{ access_token|tojson }}`);
                 
                 window.location.href = "/compute.html";
             </script>

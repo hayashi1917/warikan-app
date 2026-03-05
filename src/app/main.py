@@ -18,9 +18,11 @@ from .db import (
     get_group,
     get_user,
     get_users,
+    get_payments,
     authenticate_payment_by_current_user
 )
 from .service import fetch_frankfurter_rates
+from .payment import create_matrix
 
 app = FastAPI(title="Current Time App")
 
@@ -206,6 +208,7 @@ async def join_group_from_form(
                 status_code=409,
             )
         create_user(groupId, userId, password)
+        token = create_access_token(group_id=groupId, user_name=userId)
         return templates.TemplateResponse(
             "html/join_group.html",
             {
@@ -214,6 +217,7 @@ async def join_group_from_form(
                 "success": True,
                 "group_id": groupId,
                 "user_id": userId,
+                "access_token": token,
             },
         )
     except ValueError as exc:
@@ -237,6 +241,7 @@ async def register_group_from_form(
             leader_user_name=leaderUserName,
             leader_password=leaderPassword,
         )
+        token = create_access_token(group_id=created["group_id"], user_name=created["leader_user_name"])
         return templates.TemplateResponse(
             "html/register_group.html",
             {
@@ -245,6 +250,7 @@ async def register_group_from_form(
                 "success": True,
                 "group_id": created["group_id"],
                 "user_id": created["leader_user_name"],
+                "access_token": token,
             },
         )
     except ValueError as exc:
@@ -271,6 +277,7 @@ async def login_from_form(
             {"request": request, "static_version": STATIC_VERSION, "error": "Incorrect group_id, user_name, or password"},
             status_code=401,
         )
+    token = create_access_token(group_id=groupId, user_name=userId)
     return templates.TemplateResponse(
         "html/login.html",
         {
@@ -279,6 +286,7 @@ async def login_from_form(
             "success": True,
             "group_id": groupId,
             "user_id": userId,
+            "access_token": token,
         },
     )
 
@@ -360,6 +368,41 @@ async def payment_create(payload: PaymentCreateRequest, current_user: CurrentUse
     except Exception as exc:
         raise HTTPException(status_code=500, detail=str(exc))
 
+
+@app.get("/api/payments")
+async def payment_list(
+    group_id: int = Query(..., alias="groupID", gt=0),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    if group_id != current_user.group_id:
+        raise HTTPException(status_code=403, detail="group_id does not match your login session")
+
+    rows = get_payments(group_id)
+    by_payment_id: dict[int, dict] = {}
+    for row in rows:
+        payment_id = int(row["payment_id"])
+        if payment_id not in by_payment_id:
+            by_payment_id[payment_id] = {
+                "id": payment_id,
+                "payer": row["paid_by_user_name"],
+                "total": float(row["amount_total"]),
+                "currencyCode": row["currency_code"],
+                "title": row["title"],
+                "details": [],
+                "approvedBy": [],
+            }
+        by_payment_id[payment_id]["details"].append(
+            {
+                "name": row["beneficiary_user_name"],
+                "amount": float(row["amount"]),
+            }
+        )
+        if row["approved"]:
+            by_payment_id[payment_id]["approvedBy"].append(row["beneficiary_user_name"])
+
+    return list(by_payment_id.values())
+
+
 # 支払い承認API
 @app.post("/api/payment/{payment_id}/approve")
 async def payment_approve(
@@ -394,3 +437,12 @@ async def get_group_users(group_id: int, current_user: CurrentUser = Depends(get
         raise HTTPException(status_code=403, detail="group_id does not match your login session")
     rows = get_users(group_id)
     return {"users": [row["user_name"] for row in rows]}
+
+@app.get("/api/create-matrix")
+async def create_matrix_endpoint(
+    group_id: int = Query(..., alias="groupID", gt=0),
+    current_user: CurrentUser = Depends(get_current_user),
+):
+    if group_id != current_user.group_id:
+        raise HTTPException(status_code=403, detail="group_id does not match your login session")
+    return {"instructions": create_matrix(group_id)}

@@ -56,7 +56,7 @@
     <div id="input-section">
         <div style="margin-bottom: 15px;">
             <strong>支払った人:</strong> 
-            <input type="text" id="payer" placeholder="名前"> さん
+            <input type="text" id="payer" placeholder="名前" readonly> さん
         </div>
 
         <div id="payeeListContainer">
@@ -85,15 +85,17 @@
     // 認証情報の取得（localStorageから）
     const CURRENT_GROUP = localStorage.getItem('currentGroup');
     const CURRENT_USER = localStorage.getItem('currentUser');
+    const ACCESS_TOKEN = localStorage.getItem('accessToken');
 
     // ログインしていない場合は戻す
-    if (!CURRENT_GROUP || !CURRENT_USER) {
+    if (!CURRENT_GROUP || !CURRENT_USER || !ACCESS_TOKEN) {
         alert("ログイン情報がありません。TOPページに戻ります。");
         window.location.href = "index.html"; 
     }
 
     document.getElementById('display-user').innerText = `User: ${CURRENT_USER}`;
     document.getElementById('display-group').innerText = `Group: ${CURRENT_GROUP}`;
+    document.getElementById('payer').value = CURRENT_USER;
 
     let payments = [];
 
@@ -103,8 +105,13 @@
     // --- 1. バックエンドからのデータ取得 ---
     async function loadPayments() {
         try {
-            const response = await fetch(`/api/payments?groupID=${CURRENT_GROUP}`);
-            if (!response.ok) throw new Error("データ取得失敗");
+            const response = await fetch(`/api/payments?groupID=${CURRENT_GROUP}`, {
+                headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` },
+            });
+            if (!response.ok) {
+                const body = await response.text();
+                throw new Error(`データ取得失敗: HTTP ${response.status} ${body}`);
+            }
             payments = await response.json();
             render();
         } catch (e) {
@@ -115,7 +122,6 @@
 
     // --- 2. 支払い登録（POST） ---
     async function registerPayment() {
-        const payerName = document.getElementById('payer').value;
         const nameInputs = document.querySelectorAll('.p-name');
         const amountInputs = document.querySelectorAll('.p-amount');
         
@@ -130,49 +136,58 @@
             }
         });
 
-        if (!payerName || details.length === 0) {
+        if (!details.length) {
             alert("入力内容が不完全です");
             return;
         }
 
         const newData = {
-            groupID: CURRENT_GROUP,
-            id: Date.now(),
-            payer: payerName,
-            total: total,
-            details: details,
-            approvedBy: [CURRENT_USER], // 申請者は承認済みとする
-            createdBy: CURRENT_USER
+            group_id: Number(CURRENT_GROUP),
+            title: `支払い申請 by ${CURRENT_USER}`,
+            amount_total: total,
+            currency_code: "JPY",
+            exchange_rate: 1,
+            splits: details.map(d => ({
+                beneficiary_user_name: d.name,
+                amount: d.amount
+            })),
         };
 
+
         try {
-            await fetch('/api/payments/add', {
+            const response = await fetch('/api/payment', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${ACCESS_TOKEN}`},
                 body: JSON.stringify(newData)
             });
+            if (!response.ok) {
+                const body = await response.text();
+                throw new Error(`保存失敗: HTTP ${response.status} ${body}`);
+            }
             clearInput();
             await loadPayments();
         } catch (e) {
-            alert("保存に失敗しました。");
+            console.error(e);
+            alert(`保存に失敗しました。\n${e.message}`);
         }
     }
 
     // --- 3. 承認処理（POST） ---
     async function approvePayment(paymentId) {
         try {
-            await fetch('/api/payments/approve', {
+            const response = await fetch(`/api/payment/${paymentId}/approve`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    paymentId: paymentId,
-                    userID: CURRENT_USER,
-                    groupID: CURRENT_GROUP
-                })
+                headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` },
             });
+            if (!response.ok) {
+                const body = await response.text();
+                throw new Error(`承認失敗: HTTP ${response.status} ${body}`);
+            }
             await loadPayments();
         } catch (e) {
-            alert("承認に失敗しました。");
+            console.error(e);
+            alert(`承認に失敗しました。\n${e.message}`);
         }
     }
 
@@ -182,15 +197,20 @@
         outputDiv.innerText = "計算中...";
 
         try {
-            const response = await fetch('/api/calculate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ groupID: CURRENT_GROUP })
+            const response = await fetch(`/api/create-matrix?groupID=${CURRENT_GROUP}`, {
+                method: 'GET',
+                headers: { 'Content-Type': 'application/json' ,
+                            'Authorization': `Bearer ${ACCESS_TOKEN}`,
+                },
             });
+            if (!response.ok) {
+                const body = await response.text();
+                throw new Error(`計算失敗: HTTP ${response.status} ${body}`);
+            }
             const result = await response.json();
             outputDiv.innerText = result.instructions.join('\n') || "清算の必要はありません。";
         } catch (e) {
-            outputDiv.innerText = "計算データの取得に失敗しました。";
+            outputDiv.innerText = `計算データの取得に失敗しました。\n${e.message}`;
         }
     }
 
@@ -208,7 +228,7 @@
     }
 
     function clearInput() {
-        document.getElementById('payer').value = "";
+        document.getElementById('payer').value = CURRENT_USER;
         document.getElementById('payeeListContainer').innerHTML = `
             <div class="payee-row">
                 <input type="text" class="p-name" placeholder="名前">

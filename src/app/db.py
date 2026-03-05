@@ -258,3 +258,32 @@ def authenticate_payment_by_current_user(group_id: int, payment_id: int, current
             updated_rows = cur.rowcount
             conn.commit()
     return updated_rows > 0
+
+
+def get_payments(group_id: int) -> List[Dict[str, Any]]:
+    with mysql_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    p.payment_id,
+                    p.paid_by_user_name,
+                    p.amount_total,
+                    p.currency_code,
+                    p.title,
+                    ps.beneficiary_user_name,
+                    ps.amount,
+                    ps.approved
+                FROM `payments` p
+                INNER JOIN `payment_splits` ps
+                    ON p.payment_id = ps.payment_id
+                    AND p.group_id = ps.group_id
+                WHERE p.group_id = %s
+                ORDER BY p.payment_id DESC, ps.beneficiary_user_name ASC
+                """,
+                (group_id,),
+            )
+            rows: Sequence[Dict[str, Any]] = cur.fetchall()
+    return list(rows)
+
+
