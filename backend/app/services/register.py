@@ -44,6 +44,9 @@ def get_group_by_name(group_name: str) -> Optional[Dict[str, Any]]:
 def create_group_with_leader(group_name: str, leader_user_name: str, leader_password: str) -> Dict[str, Any]:
     ensure_schema()
 
+    if get_group_by_name(group_name):
+        raise ValueError("group_name already exists")
+
     with mysql_connection() as conn:
         with conn.cursor() as cur:
             group_id = _create_group(cur, group_name)

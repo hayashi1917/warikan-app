@@ -72,7 +72,8 @@
             align-items: center;
         }
 
-        input {
+        input,
+        select {
             background-color: #333;
             border: 1px solid #444;
             color: #fff;
@@ -220,12 +221,12 @@
         <div id="input-section">
             <div style="margin-bottom: 15px;">
                 <strong>支払った人:</strong>
-                <input type="text" id="payer" placeholder="名前"> さん
+                <select id="payer"></select> さん
             </div>
 
             <div id="payeeListContainer">
                 <div class="payee-row">
-                    <input type="text" class="p-name" placeholder="借りた人（対象者）">
+                    <select class="p-name"></select>
                     <input type="number" class="p-amount" placeholder="金額"> 円
                 </div>
             </div>
@@ -260,10 +261,14 @@
         document.getElementById('display-user').innerText = `User: ${CURRENT_USER}`;
         document.getElementById('display-group').innerText = `Group: ${CURRENT_GROUP}`;
 
+        const MEMBER_NAMES = {{ member_names | tojson }};
         let payments = [];
 
         // ページ読み込み時にデータを取得
-        window.onload = loadPayments;
+        window.onload = async () => {
+            initializeMemberSelectors();
+            await loadPayments();
+        };
 
         // --- 1. バックエンドからのデータ取得 ---
         async function loadPayments() {
@@ -276,6 +281,24 @@
                 console.error(e);
                 // 本番運用前はモックデータでテスト可能
             }
+        }
+
+        function buildMemberOptions(includeEmpty = true) {
+            const emptyOption = includeEmpty ? '<option value="">選択してください</option>' : '';
+            const memberOptions = MEMBER_NAMES.map(name => `<option value="${name}">${name}</option>`).join('');
+            return `${emptyOption}${memberOptions}`;
+        }
+
+        function initializeMemberSelectors() {
+            const payerSelect = document.getElementById('payer');
+            payerSelect.innerHTML = buildMemberOptions();
+            if (MEMBER_NAMES.includes(CURRENT_USER)) {
+                payerSelect.value = CURRENT_USER;
+            }
+
+            document.querySelectorAll('.p-name').forEach(select => {
+                select.innerHTML = buildMemberOptions();
+            });
         }
 
         // --- 2. 支払い登録（POST） ---
@@ -389,7 +412,7 @@
             const div = document.createElement('div');
             div.className = 'payee-row';
             div.innerHTML = `
-            <input type="text" class="p-name" placeholder="名前">
+            <select class="p-name">${buildMemberOptions()}</select>
             <input type="number" class="p-amount" placeholder="金額"> 円
             <button class="delete-btn" onclick="this.parentElement.remove()">×</button>
         `;
@@ -400,7 +423,7 @@
             document.getElementById('payer').value = "";
             document.getElementById('payeeListContainer').innerHTML = `
             <div class="payee-row">
-                <input type="text" class="p-name" placeholder="名前">
+                <select class="p-name">${buildMemberOptions()}</select>
                 <input type="number" class="p-amount" placeholder="金額"> 円
             </div>`;
         }

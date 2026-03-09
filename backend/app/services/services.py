@@ -43,6 +43,7 @@ __all__ = [
     "create_payment",
     "delete_payment",
     "authenticate_payment_by_current_user",
+    "list_group_payments",
     "fetch_frankfurter_rates",
 ]
 
@@ -119,3 +120,56 @@ def delete_payment(group_id: int, payment_id: int, current_user_name: str) -> Tu
         return True, "ok"
     except Exception as e:
         return False, str(e)
+
+def list_group_payments(group_id: int) -> List[Dict[str, Any]]:
+    with mysql_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT
+                    p.payment_id,
+                    p.paid_by_user_name,
+                    p.title,
+                    p.amount_total,
+                    p.currency_code,
+                    p.exchange_rate,
+                    p.payment_date,
+                    ps.beneficiary_user_name,
+                    ps.amount,
+                    ps.approved
+                FROM `payments` p
+                INNER JOIN `payment_splits` ps
+                    ON p.payment_id = ps.payment_id
+                WHERE p.group_id = %s
+                ORDER BY p.payment_id DESC, ps.beneficiary_user_name ASC
+                """,
+                (group_id,),
+            )
+            rows = cur.fetchall()
+
+    grouped: Dict[int, Dict[str, Any]] = {}
+    for row in rows:
+        payment_id = int(row["payment_id"])
+        if payment_id not in grouped:
+            grouped[payment_id] = {
+                "payment_id": payment_id,
+                "paid_by_user_name": row["paid_by_user_name"],
+                "title": row["title"],
+                "amount_total": float(row["amount_total"]),
+                "currency_code": row["currency_code"],
+                "exchange_rate": float(row["exchange_rate"]),
+                "payment_date": row["payment_date"].isoformat() if row["payment_date"] else None,
+                "splits": [],
+                "is_approved": True,
+            }
+
+        split = {
+            "beneficiary_user_name": row["beneficiary_user_name"],
+            "amount": float(row["amount"]),
+            "approved": bool(row["approved"]),
+        }
+        grouped[payment_id]["splits"].append(split)
+        if not split["approved"]:
+            grouped[payment_id]["is_approved"] = False
+
+    return list(grouped.values())
