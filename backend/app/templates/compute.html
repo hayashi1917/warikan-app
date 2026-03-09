@@ -273,9 +273,10 @@
         // --- 1. バックエンドからのデータ取得 ---
         async function loadPayments() {
             try {
-                const response = await fetch(`/api/payments?groupID=${CURRENT_GROUP}`);
+                const response = await fetch(`/payment/list?group_id=${CURRENT_GROUP_ID}`);
                 if (!response.ok) throw new Error("データ取得失敗");
-                payments = await response.json();
+                const result = await response.json();
+                payments = result.all || [];
                 render();
             } catch (e) {
                 console.error(e);
@@ -354,14 +355,8 @@
         // --- 3. 承認処理（POST） ---
         async function approvePayment(paymentId) {
             try {
-                await fetch('/api/payments/approve', {
+                await fetch(`/payment/authenticate?group_id=${CURRENT_GROUP_ID}&payment_id=${paymentId}`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        paymentId: paymentId,
-                        userID: CURRENT_USER,
-                        groupID: CURRENT_GROUP
-                    })
                 });
                 await loadPayments();
             } catch (e) {
@@ -394,13 +389,12 @@
             outputDiv.innerText = "計算中...";
 
             try {
-                const response = await fetch('/api/calculate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ groupID: CURRENT_GROUP })
-                });
+                const response = await fetch(`/payment/settlements?group_id=${CURRENT_GROUP_ID}`);
                 const result = await response.json();
-                outputDiv.innerText = result.instructions.join('\n') || "清算の必要はありません。";
+                const settlements = result?.result?.settlements || [];
+                outputDiv.innerText = settlements.length
+                    ? settlements.map(s => `${s.from_user_name} → ${s.to_user_name}: ${s.amount}円`).join('\n')
+                    : "清算の必要はありません。";
             } catch (e) {
                 outputDiv.innerText = "計算データの取得に失敗しました。";
             }
@@ -435,25 +429,25 @@
             approvedUl.innerHTML = "";
 
             payments.forEach(p => {
-                // 全員が承認したかチェック (detailsの全員がapprovedByに含まれているか)
-                const targetNames = p.details.map(d => d.name);
-                const isFullyApproved = targetNames.every(name => p.approvedBy.includes(name));
+                const targetNames = p.splits.map(d => d.beneficiary_user_name);
+                const approvedBy = p.splits.filter(d => d.approved).map(d => d.beneficiary_user_name);
+                const isFullyApproved = p.is_approved;
 
                 const li = document.createElement('li');
-                const detailStr = p.details.map(d => `${d.name}(${d.amount}円)`).join(', ');
+                const detailStr = p.splits.map(d => `${d.beneficiary_user_name}(${d.amount}円)`).join(', ');
 
                 // 自分の承認が必要か
-                const needsMyApproval = targetNames.includes(CURRENT_USER) && !p.approvedBy.includes(CURRENT_USER);
+                const needsMyApproval = targetNames.includes(CURRENT_USER) && !approvedBy.includes(CURRENT_USER);
 
                 li.innerHTML = `
                 <div class="main-info">
-                    <span>${p.payer}</span> → ${p.total}円<br>
+                    <span>${p.paid_by_user_name}</span> → ${p.amount_total}円<br>
                     <small class="detail-text">内訳: ${detailStr}</small><br>
-                    <small class="approval-status">承認済: ${p.approvedBy.join(', ')}</small>
+                    <small class="approval-status">承認済: ${approvedBy.join(', ')}</small>
                 </div>
                 <div class="payment-actions">
                     ${!isFullyApproved ?
-                        `<button class="approve-btn" ${!needsMyApproval ? 'disabled' : ''} onclick="approvePayment(${p.id})">
+                        `<button class="approve-btn" ${!needsMyApproval ? 'disabled' : ''} onclick="approvePayment(${p.payment_id})">
                             ${needsMyApproval ? '承認する' : '承認待ち'}
                         </button>` :
                         `<span style="color:green; font-weight:bold;">✓ 完了</span>`
