@@ -41,10 +41,25 @@ def fetch_frankfurter_rates(
 
 __all__ = [
     "create_payment",
+    "delete_payment",
     "authenticate_payment_by_current_user",
+    "resolve_jpy_exchange_rate",
     "list_group_payments",
     "fetch_frankfurter_rates",
 ]
+
+
+def resolve_jpy_exchange_rate(currency_code: str) -> float:
+    normalized_code = currency_code.upper()
+    if normalized_code == "JPY":
+        return 1.0
+
+    response = fetch_frankfurter_rates(base=normalized_code, symbols=["JPY"])
+    rates = response.get("rates") or {}
+    jpy_rate = rates.get("JPY")
+    if jpy_rate is None:
+        raise ValueError(f"JPY exchange rate not found for currency: {normalized_code}")
+    return float(jpy_rate)
 
 # 支払いの作成
 def create_payment(
@@ -98,6 +113,27 @@ def authenticate_payment_by_current_user(group_id: int, payment_id: int, current
             conn.commit()
     return updated_rows > 0
 
+
+def delete_payment(group_id: int, payment_id: int, current_user_name: str) -> Tuple[bool, str]:
+    """Delete a payment created by the current user in the current group."""
+    try:
+        with mysql_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    DELETE FROM `payments`
+                    WHERE payment_id = %s AND group_id = %s AND paid_by_user_name = %s
+                    """,
+                    (payment_id, group_id, current_user_name),
+                )
+                deleted_rows = cur.rowcount
+            conn.commit()
+
+        if deleted_rows == 0:
+            return False, "削除対象が見つからないか、削除権限がありません。"
+        return True, "ok"
+    except Exception as e:
+        return False, str(e)
 
 def list_group_payments(group_id: int) -> List[Dict[str, Any]]:
     with mysql_connection() as conn:
