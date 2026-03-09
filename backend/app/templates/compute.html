@@ -421,7 +421,9 @@
                 const result = await response.json();
                 const settlements = result?.result?.settlements || [];
                 outputDiv.innerText = settlements.length
-                    ? settlements.map(s => `${s.from_user_name} → ${s.to_user_name}: ${s.amount}円`).join('\n')
+                    ? settlements
+                        .map(s => `${s.from_user_name} → ${s.to_user_name}: ${formatCurrencyAmount(s.amount, 'JPY')}`)
+                        .join('\n')
                     : "清算の必要はありません。";
             } catch (e) {
                 outputDiv.innerText = "計算データの取得に失敗しました。";
@@ -463,14 +465,17 @@
                 const isFullyApproved = p.is_approved;
 
                 const li = document.createElement('li');
-                const detailStr = p.splits.map(d => `${d.beneficiary_user_name}(${d.amount}円)`).join(', ');
+                const currencyCode = p.currency_code || 'JPY';
+                const detailStr = p.splits
+                    .map(d => `${d.beneficiary_user_name}(${formatCurrencyAmount(d.amount, currencyCode)})`)
+                    .join(', ');
 
                 // 自分の承認が必要か
                 const needsMyApproval = targetNames.includes(CURRENT_USER) && !approvedBy.includes(CURRENT_USER);
 
                 li.innerHTML = `
                 <div class="main-info">
-                    <span>${p.paid_by_user_name}</span> → ${p.amount_total}円<br>
+                    <span>${p.paid_by_user_name}</span> → ${formatCurrencyAmount(p.amount_total, currencyCode)}<br>
 
                     <small class="detail-text">内訳: ${detailStr}</small><br>
                     <small class="approval-status">承認済: ${approvedBy.join(', ')}</small>
