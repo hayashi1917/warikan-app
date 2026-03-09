@@ -1,10 +1,10 @@
 services:
   db:
     image: mysql:8.4
-    container_name: canon_milc_mysql
+    container_name: warikan_app_mysql
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: canon_milc_info
+      MYSQL_DATABASE: warikan_app_info
       MYSQL_USER: app
       MYSQL_PASSWORD: app
       TZ: Europe/Paris
@@ -23,7 +23,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: canon_milc_app
+    container_name: warikan_app
     working_dir: /app/src
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000
     environment:
@@ -32,7 +32,7 @@ services:
       MYSQL_PORT: 3306
       MYSQL_USER: app
       MYSQL_PASSWORD: app
-      MYSQL_DATABASE: canon_milc_info
+      MYSQL_DATABASE: warikan_app_info
       MYSQL_PAYMENT_TABLE: payment_results
     depends_on:
       db:

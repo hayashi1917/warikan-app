@@ -16,7 +16,7 @@ def _mysql_config() -> Dict[str, Any]:
         "port": int(os.getenv("MYSQL_PORT", "3306")),
         "user": os.getenv("MYSQL_USER", "root"),
         "password": os.getenv("MYSQL_PASSWORD", ""),
-        "database": os.getenv("MYSQL_DATABASE", "canon_milc_info"),
+        "database": os.getenv("MYSQL_DATABASE", "warikan_app_info"),
         "charset": "utf8mb4",
         "autocommit": False,
         "cursorclass": pymysql.cursors.DictCursor,
@@ -290,5 +290,4 @@ def get_payments(group_id: int) -> List[Dict[str, Any]]:
             )
             rows: Sequence[Dict[str, Any]] = cur.fetchall()
     return list(rows)
-
 
