@@ -1,48 +1,35 @@
 <!DOCTYPE html>
+
+
+<!--
+TODO
+all html Add Menu and make better looking.
+about >> content
+start >> alert.
+compute sanitize vibecoding
+-->
+
+
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FairShare</title>
-    <style>
-    :root {color-scheme: dark; }
-    body {
-        font-family: Arial, sans-serif;
-        background-color:#111;
-        color: #e0e0e0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
-        margin: 0;
-        }
-    .container {
-        width: 90%;
-        max-width: 400px;
-        text-align: center;
-        }
-    h3{font-weight: normal;
-      opacity: 0.8;}
-    .links {
-        display: flex;
-        flex-direction: column; 
-        gap: 1rem;}
-    .btn {
-        display: block;
-        text-align:center;
-        text-decoration: none;
-        background: #333;
-        color: #e0e0e0;
-        padding: 12px;
-        transition: background 0.3s;
-        border-radius: 8px;
-    }
-    .btn:hover {background: #444;}
-    </style>
+
+    <link href="style.css" rel="stylesheet">
 </head>
 <body>
+    <header>        
+         <a href="index.html"><h1>FairShare</h1></a>
+
+             <nav class="navlinks">
+             <a href = "start.html" class=>Register&Login</a>
+             <a href = "about.html" class=>about</a>
+             <a href = "compute.html" class=>compute</a>
+            </nav>
+    </header>
     <div class="container">
-        <h1>FairShare</h1>
+        <h1>Welcome to FairShare</h1>
         <h3>Make your payment easier and safer</h3>
         <div class="links">
             <a href = "start.html" class="btn">Start</a>
