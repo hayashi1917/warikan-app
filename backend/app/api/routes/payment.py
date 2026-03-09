@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
-from app.services.services import create_payment
+from app.services.services import create_payment, delete_payment
 from app.schemas.schemas import PaymentCreateRequest
 
 templates = Jinja2Templates(directory="app/templates")
@@ -36,6 +36,27 @@ def create_payment_post(request: Request, req: PaymentCreateRequest):
             return JSONResponse(content={"status": "success", "payment_id": result})
         else:
             return JSONResponse(status_code=500, content={"status": "error", "detail": result})
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
+
+
+
+@router.delete("/{payment_id}", name="delete_payment")
+def delete_payment_by_id(payment_id: int, request: Request):
+    try:
+        group_id = request.session.get("group_id")
+        user_name = request.session.get("user_name")
+        if not group_id or not user_name:
+            return JSONResponse(status_code=401, content={"status": "error", "detail": "ログイン情報がありません"})
+
+        success, result = delete_payment(
+            group_id=int(group_id),
+            payment_id=payment_id,
+            current_user_name=user_name,
+        )
+        if success:
+            return JSONResponse(content={"status": "success"})
+        return JSONResponse(status_code=403, content={"status": "error", "detail": result})
     except Exception as e:
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(e)})
 
