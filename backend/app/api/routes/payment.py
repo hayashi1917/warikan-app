@@ -6,7 +6,8 @@ from app.services.services import (
     authenticate_payment_by_current_user,
     create_payment,
     list_group_payments,
-    delete_payment
+    delete_payment,
+    resolve_jpy_exchange_rate,
 )
 from app.services.payments import calculate_group_settlements
 from app.services.register import get_users
@@ -34,13 +35,14 @@ def payment(request: Request):
 def create_payment_post(request: Request, req: PaymentCreateRequest):
     try:
         login_user_name = request.session.get("user_name", "")
+        exchange_rate = resolve_jpy_exchange_rate(req.currency_code)
         success, result = create_payment(
             group_id=req.group_id,
             login_user_name=login_user_name,
             title=req.title,
             amount_total=req.amount_total,
             currency_code=req.currency_code,
-            exchange_rate=req.exchange_rate,
+            exchange_rate=exchange_rate,
             splits=[s.model_dump() for s in req.splits],
         )
         if success:

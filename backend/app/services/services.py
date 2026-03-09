@@ -43,9 +43,23 @@ __all__ = [
     "create_payment",
     "delete_payment",
     "authenticate_payment_by_current_user",
+    "resolve_jpy_exchange_rate",
     "list_group_payments",
     "fetch_frankfurter_rates",
 ]
+
+
+def resolve_jpy_exchange_rate(currency_code: str) -> float:
+    normalized_code = currency_code.upper()
+    if normalized_code == "JPY":
+        return 1.0
+
+    response = fetch_frankfurter_rates(base=normalized_code, symbols=["JPY"])
+    rates = response.get("rates") or {}
+    jpy_rate = rates.get("JPY")
+    if jpy_rate is None:
+        raise ValueError(f"JPY exchange rate not found for currency: {normalized_code}")
+    return float(jpy_rate)
 
 # 支払いの作成
 def create_payment(
