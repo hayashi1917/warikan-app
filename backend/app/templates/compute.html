@@ -452,8 +452,8 @@
                         </button>` :
                         `<span style="color:green; font-weight:bold;">✓ 完了</span>`
                     }
-                    ${p.payer === CURRENT_USER ?
-                        `<button class="delete-payment-btn" onclick="deletePayment(${p.id})">この申請を削除</button>` :
+                    ${p.paid_by_user_name === CURRENT_USER ?
+                        `<button class="delete-payment-btn" onclick="deletePayment(${p.payment_id})">この申請を削除</button>` :
                         ''
                     }
                 </div>
