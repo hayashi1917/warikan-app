@@ -2,6 +2,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from app.services.services import create_payment
+from app.services.register import get_users
 from app.schemas.schemas import PaymentCreateRequest
 
 templates = Jinja2Templates(directory="app/templates")
@@ -16,7 +17,10 @@ router = APIRouter(
 def payment(request: Request):
     if not request.session.get("group_name") or not request.session.get("user_name"):
         return RedirectResponse(url="/register/start", status_code=303)
-    return templates.TemplateResponse("compute.html", {"request": request})
+    group_id = request.session.get("group_id")
+    users = get_users(group_id) if group_id else []
+    member_names = [user["user_name"] for user in users]
+    return templates.TemplateResponse("compute.html", {"request": request, "member_names": member_names})
 
 
 @router.post("/create", name="create_payment")
