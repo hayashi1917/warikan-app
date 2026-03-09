@@ -224,10 +224,15 @@
                 <select id="payer"></select> さん
             </div>
 
+            <div style="margin-bottom: 15px;">
+                <strong>通貨:</strong>
+                <select id="currency-select"></select>
+            </div>
+
             <div id="payeeListContainer">
                 <div class="payee-row">
                     <select class="p-name"></select>
-                    <input type="number" class="p-amount" placeholder="金額"> 円
+                    <input type="number" class="p-amount" placeholder="金額">
                 </div>
             </div>
 
@@ -262,6 +267,7 @@
         document.getElementById('display-group').innerText = `Group: ${CURRENT_GROUP}`;
 
         const MEMBER_NAMES = {{ member_names | tojson }};
+        const CURRENCY_OPTIONS = ["JPY", "USD", "EUR", "GBP"];
         let payments = [];
 
         // ページ読み込み時にデータを取得
@@ -300,6 +306,27 @@
             document.querySelectorAll('.p-name').forEach(select => {
                 select.innerHTML = buildMemberOptions();
             });
+
+            const currencySelect = document.getElementById('currency-select');
+            currencySelect.innerHTML = CURRENCY_OPTIONS
+                .map(code => `<option value="${code}">${code}</option>`)
+                .join('');
+            currencySelect.value = 'JPY';
+        }
+
+        function getCurrencySymbol(currencyCode) {
+            const symbols = {
+                JPY: '¥',
+                USD: '$',
+                EUR: '€',
+                GBP: '£'
+            };
+            return symbols[currencyCode] || currencyCode;
+        }
+
+        function formatCurrencyAmount(amount, currencyCode) {
+            const symbol = getCurrencySymbol(currencyCode);
+            return `${amount}${symbol}`;
         }
 
         // --- 2. 支払い登録（POST） ---
@@ -324,12 +351,13 @@
                 return;
             }
 
+            const selectedCurrency = document.getElementById('currency-select').value || 'JPY';
+
             const newData = {
                 group_id: parseInt(CURRENT_GROUP_ID),
                 title: `${payerName}の立替`,
                 amount_total: total,
-                currency_code: "JPY",
-                exchange_rate: 1.0,
+                currency_code: selectedCurrency,
                 splits: splits
             };
 
@@ -393,7 +421,7 @@
                 const result = await response.json();
                 const settlements = result?.result?.settlements || [];
                 outputDiv.innerText = settlements.length
-                    ? settlements.map(s => `${s.from_user_name} → ${s.to_user_name}: ${s.amount}円`).join('\n')
+                    ? settlements.map(s => `${s.from_user_name} → ${s.to_user_name}: ${formatCurrencyAmount(s.amount, 'JPY')}`).join('\n')
                     : "清算の必要はありません。";
             } catch (e) {
                 outputDiv.innerText = "計算データの取得に失敗しました。";
@@ -407,7 +435,7 @@
             div.className = 'payee-row';
             div.innerHTML = `
             <select class="p-name">${buildMemberOptions()}</select>
-            <input type="number" class="p-amount" placeholder="金額"> 円
+            <input type="number" class="p-amount" placeholder="金額">
             <button class="delete-btn" onclick="this.parentElement.remove()">×</button>
         `;
             container.appendChild(div);
@@ -415,10 +443,11 @@
 
         function clearInput() {
             document.getElementById('payer').value = "";
+            document.getElementById('currency-select').value = 'JPY';
             document.getElementById('payeeListContainer').innerHTML = `
             <div class="payee-row">
                 <select class="p-name">${buildMemberOptions()}</select>
-                <input type="number" class="p-amount" placeholder="金額"> 円
+                <input type="number" class="p-amount" placeholder="金額">
             </div>`;
         }
 
@@ -434,14 +463,17 @@
                 const isFullyApproved = p.is_approved;
 
                 const li = document.createElement('li');
-                const detailStr = p.splits.map(d => `${d.beneficiary_user_name}(${d.amount}円)`).join(', ');
+                const currencyCode = p.currency_code || 'JPY';
+                const detailStr = p.splits
+                    .map(d => `${d.beneficiary_user_name}(${formatCurrencyAmount(d.amount, currencyCode)})`)
+                    .join(', ');
 
                 // 自分の承認が必要か
                 const needsMyApproval = targetNames.includes(CURRENT_USER) && !approvedBy.includes(CURRENT_USER);
 
                 li.innerHTML = `
                 <div class="main-info">
-                    <span>${p.paid_by_user_name}</span> → ${p.amount_total}円<br>
+                    <span>${p.paid_by_user_name}</span> → ${formatCurrencyAmount(p.amount_total, currencyCode)}<br>
                     <small class="detail-text">内訳: ${detailStr}</small><br>
                     <small class="approval-status">承認済: ${approvedBy.join(', ')}</small>
                 </div>
