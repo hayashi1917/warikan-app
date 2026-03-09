@@ -1,19 +1,9 @@
 import json
-from typing import Optional
+from typing import Optional, List, Dict, Any, Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from .db import (
-    authenticate_user,
-    create_group_with_leader,
-    create_payment,
-    create_user,
-    ensure_schema,
-    get_user,
-    hash_password,
-    mysql_connection,
-    verify_password,
-)
+from app.db.db import mysql_connection
 
 
 FRANKFURTER_BASE_URL = "https://api.frankfurter.dev/v1"
@@ -50,15 +40,8 @@ def fetch_frankfurter_rates(
     return json.loads(data)
 
 __all__ = [
-    "mysql_connection",
-    "ensure_schema",
-    "create_group_with_leader",
-    "create_user",
-    "get_user",
-    "authenticate_user",
-    "hash_password",
-    "verify_password",
     "create_payment",
+    "authenticate_payment_by_current_user",
     "fetch_frankfurter_rates",
 ]
 
@@ -72,28 +55,31 @@ def create_payment(
     exchange_rate: float,
     splits: List[Dict[str, Any]],
 ) -> int:
-    with mysql_connection() as conn:
-        with conn.cursor() as cur:
-            # 概要の登録
-            cur.execute(
-                """
-                INSERT INTO `payments` (group_id, paid_by_user_name, title, amount_total, currency_code, exchange_rate)
-                VALUES (%s, %s, %s, %s, %s, %s)
-                """,
-                (group_id, login_user_name, title, amount_total, currency_code, exchange_rate),
-            )
-            payment_id = int(cur.lastrowid)
-            # 詳細の登録
-            for split in splits:
+    try:
+        with mysql_connection() as conn:
+            with conn.cursor() as cur:
+                # 概要の登録
                 cur.execute(
                     """
-                    INSERT INTO `payment_splits` (payment_id, group_id, beneficiary_user_name, amount)
-                    VALUES (%s, %s, %s, %s)
+                    INSERT INTO `payments` (group_id, paid_by_user_name, title, amount_total, currency_code, exchange_rate)
+                    VALUES (%s, %s, %s, %s, %s, %s)
                     """,
-                    (payment_id, group_id, split["beneficiary_user_name"], split["amount"]),
+                    (group_id, login_user_name, title, amount_total, currency_code, exchange_rate),
                 )
-        conn.commit()
-    return payment_id
+                payment_id = int(cur.lastrowid)
+                # 詳細の登録
+                for split in splits:
+                    cur.execute(
+                        """
+                        INSERT INTO `payment_splits` (payment_id, group_id, beneficiary_user_name, amount)
+                        VALUES (%s, %s, %s, %s)
+                        """,
+                        (payment_id, group_id, split["beneficiary_user_name"], split["amount"]),
+                    )
+            conn.commit()
+    except Exception as e:
+        return False, str(e)
+    return True, payment_id
 
 # 支払い承認
 def authenticate_payment_by_current_user(group_id: int, payment_id: int, current_user_name: str) -> bool:

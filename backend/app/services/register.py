@@ -1,7 +1,10 @@
-
+from app.auth.auth import hash_password, verify_password
+from app.db.db import mysql_connection, ensure_schema
+from typing import Optional, List, Dict, Any
+import pymysql.cursors
 
 # グループ作成
-def create_group(cur: pymysql.cursors.Cursor, group_name: str) -> int:
+def _create_group(cur: pymysql.cursors.Cursor, group_name: str) -> int:
     cur.execute("INSERT INTO `groups` (group_name) VALUES (%s)", (group_name,))
     return int(cur.lastrowid)
 
@@ -21,13 +24,29 @@ def get_group(group_id: int) -> Optional[Dict[str, Any]]:
             row = cur.fetchone()
     return row
 
+# グループ名からグループを取得
+def get_group_by_name(group_name: str) -> Optional[Dict[str, Any]]:
+    with mysql_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                SELECT group_id, group_name
+                FROM `groups`
+                WHERE group_name = %s
+                LIMIT 1
+                """,
+                (group_name,),
+            )
+            row = cur.fetchone()
+    return row
+
 # グループ新規作成とリーダのユーザ作成
 def create_group_with_leader(group_name: str, leader_user_name: str, leader_password: str) -> Dict[str, Any]:
     ensure_schema()
 
     with mysql_connection() as conn:
         with conn.cursor() as cur:
-            group_id = create_group(cur, group_name)
+            group_id = _create_group(cur, group_name)
             cur.execute(
                 "INSERT INTO `users` (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
                 (group_id, leader_user_name, hash_password(leader_password)),
@@ -37,7 +56,7 @@ def create_group_with_leader(group_name: str, leader_user_name: str, leader_pass
     return {"group_id": group_id, "group_name": group_name, "leader_user_name": leader_user_name}
 
 # グループに所属するユーザ作成
-def create_user(group_id: int, user_name: str, password: str) -> None:
+def create_user(group_id: int, user_name: str, password: str) -> Dict[str, Any]:
     # 名前がすでに存在していればエラー
     if get_user(group_id, user_name):
         raise ValueError("user_name already exists in this group")
@@ -49,6 +68,7 @@ def create_user(group_id: int, user_name: str, password: str) -> None:
                 (group_id, user_name, password_hash),
             )
         conn.commit()
+    return {"group_id": group_id, "user_name": user_name}
 
 # グループに所属する全ユーザを取得
 def get_users(group_id: int) -> Optional[List[Dict[str, Any]]]:

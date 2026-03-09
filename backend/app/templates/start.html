@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Start -FairShare</title>
+    <style>
+        :root {
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #111;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            color: #fff;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 1rem;
+            display: block;
+            text-align: center;
+            text-decoration: none;
+            background: #33d;
+            color: #e0e0e0;
+            padding: 12px;
+            transition: background 0.3s;
+            border: none;
+            border-radius: 8px;
+        }
+
+        .btn:hover {
+            background: #66f;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Register New Group</h2>
+        <form id="subForm" class="form-group">
+            <input type="text" name="group_name" id="group_id" placeholder="GroupID">
+            <input type="text" name="user_name" id="user_id" placeholder="User_ID">
+            <input type="password" id="user_pass" placeholder="password">
+            <button type="submit" id="RG_button" class="btn">Register Group</button>
+            <button type="submit" id="JG_button" class="btn">Join Group</button>
+            <button type="submit" id="L_button" class="btn">Login</button>
+        </form>
+    </div>
+
+
+    <script>
+        document.getElementById('subForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btnId = e.submitter.id;
+
+            let apiurl = "";
+            if (btnId === "RG_button") { apiurl = '/register/register_group'; }
+            else if (btnId === "JG_button") { apiurl = '/register/join_group'; }
+            else if (btnId === "L_button") { apiurl = '/register/login'; }
+            try {
+                const response = await fetch(apiurl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        group_name: document.getElementById("group_id").value,
+                        user_name: document.getElementById("user_id").value,
+                        password: document.getElementById("user_pass").value
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.message == "ok") {
+                    localStorage.setItem("current_group_id", data.group_id);
+                    localStorage.setItem("current_group", data.group_name);
+                    localStorage.setItem("current_user", data.user_name);
+                    window.location.href = data.redirect_url;
+                } else {
+                    alert("Error: " + (data.detail || "Failed"));
+                }
+            } catch (err) { alert("Error"); }
+        });
+    </script>
+
+</body>
+
+</html>

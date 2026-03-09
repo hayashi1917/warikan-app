@@ -22,11 +22,11 @@ class PaymentCreateRequest(BaseModel):
 
 class GroupCreateRequest(BaseModel):
     group_name: str = Field(min_length=1, max_length=50)
-    leader_user_name: str = Field(min_length=1, max_length=50)
-    leader_password: str = Field(min_length=8, max_length=128)
+    user_name: str = Field(min_length=1, max_length=50)
+    password: str = Field(min_length=8, max_length=128)
 
 class UserCreateRequest(BaseModel):
-    group_id: int = Field(gt=0)
+    group_name: str = Field(min_length=1, max_length=50)
     user_name: str = Field(min_length=1, max_length=50)
     password: str = Field(min_length=8, max_length=128)
 
@@ -37,11 +37,11 @@ class RegisterRequest(BaseModel):
 
 
 class LoginRequest(BaseModel):
-    group_id: int
+    group_name: str
     user_name: str
     password: str
 
 
 class CurrentUser(BaseModel):
-    group_id: int
+    group_name: str
     user_name: str

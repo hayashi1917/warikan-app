@@ -5,10 +5,13 @@ templates = Jinja2Templates(directory="app/templates")
 
 
 router = APIRouter(
-    prefix="/home",
     tags=["home"],
 )
 
 @router.get("/", name="home")
 def home(request: Request):
     return templates.TemplateResponse("index.html", {"request": request})
+
+@router.get("/about", name="about")
+def about(request: Request):
+    return templates.TemplateResponse("about.html", {"request": request})
