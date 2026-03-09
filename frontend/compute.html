@@ -3,16 +3,25 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Compute - 支払い精算システム</title>
+    <title>Compute-FairShare</title>
     <link rel="stylesheet" href="../../static/css/compute.css">
     <link rel="stylesheet" href="../../static/css/style.css">
     <script src="../../static/js/compute.js" defer></script>
 </head>
 <body>
+        <header>        
+            <a href="index.html"><h1>FairShare</h1></a>
 
+            <nav class="navlinks">
+                <a href = "start.html" class=>Login/Sign Up</a>
+                <a href = "about.html" class=>About</a>
+                <a href = "compute.html" class=>Compute</a>
+            </nav>
+        </header>
+        
 <div class="container">
     <div class="header-info">
-        <h1>Payment Tracker</h1>
+        <h1>Payment Manager</h1>
         <div>
             <span id="display-user">User: ---</span>
             <span id="display-group" class="group-tag">Group: ---</span>
@@ -21,30 +30,30 @@
 
     <div id="input-section">
         <div style="margin-bottom: 15px;">
-            <strong>支払った人:</strong> 
-            <input type="text" id="payer" placeholder="名前" readonly> さん
+            <strong>Payer:</strong> 
+            <input type="text" id="Payer" placeholder="name" readonly> 
         </div>
 
         <div id="payeeListContainer">
             <div class="payee-row">
-                <input type="text" class="p-name" placeholder="借りた人（対象者）">
-                <input type="number" class="p-amount" placeholder="金額"> 円
+                <input type="text" class="p-name" placeholder="Payee">
+                <input type="number" class="p-amount" placeholder="Amount"> 
             </div>
         </div>
         
-        <button class="add-row-btn" onclick="addPayeeRow()">＋ 建て替え先を追加</button>
-        <button class="register-btn" onclick="registerPayment()">この内容で申請する（未承認へ）</button>
+        <button class="add-row-btn" onclick="addPayeeRow()">Add Payee</button>
+        <button class="register-btn" onclick="registerPayment()">Submit the Payment</button>
     </div>
 
-    <h2>未承認の支払い <small>(関係者全員の承認が必要)</small></h2>
+    <h2>Pending Approval</h2>
     <ul id="unapprovedList"></ul>
 
-    <h2>承認済みの支払い</h2>
+    <h2>Approved Payments</h2>
     <ul id="approvedList"></ul>
 
-    <h2>最終精算（最小フロー計算結果）</h2>
-    <button class="add-row-btn" style="background:#4a90e2" onclick="calculateMinFlow()">最新の計算結果を取得</button>
-    <div id="Output">承認されたデータがありません</div>
+    <h2>Settlement</h2>
+    <button class="add-row-btn" style="background:#4a90e2" onclick="calculateMinFlow()">Settle Balances</button>
+    <div id="Output">No data to display</div>
 </div>
 
 </body>
