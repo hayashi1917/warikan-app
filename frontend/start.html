@@ -1,35 +1,32 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Start -FairShare</title>
-    <link href="style.css" rel="stylesheet">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Start -FairShare</title>
+        <link href="style.css" rel="stylesheet">
+    </head>
+    <body>
+        <header>        
+            <a href="index.html"><h1>FairShare</h1></a>
 
-</head>
-
-<body>
-    <header>        
-         <a href="index.html"><h1>FairShare</h1></a>
-
-             <nav class="navlinks">
-             <a href = "start.html" class=>Register&Login</a>
-             <a href = "about.html" class=>About</a>
-             <a href = "compute.html" class=>Compute</a>
+            <nav class="navlinks">
+                <a href = "start.html" class=>Register&Login</a>
+                <a href = "about.html" class=>About</a>
+                <a href = "compute.html" class=>Compute</a>
             </nav>
-    </header>
-    <div class="container">
-        <h1>Start</h1>
-        <form id ="subForm" class= "form-group">
-            <input type="text" name = "group_name"id="GroupID" placeholder="GroupID">
-            <input type="text" name = "user_name" id="UserID" placeholder="UserID">
-            <input type="password" id="UserPass" placeholder="Password">
-            <button type = "submit"id="RG_button" class="btn">Register Group</button>
-            <button type = "submit"id="JG_button" class="btn">Join Group</button>
-            <button type = "submit"id="L_button" class="btn">Login</button>
-        </form>
-    </div>
-    
-    <script src="start.js"></script>
-</body>
+        </header>
+        <div class="container">
+            <h1>Start</h1>
+            <form id ="subForm" class= "form-group">
+                <input type="text" name = "group_name"id="GroupID" placeholder="GroupID">
+                <input type="text" name = "user_name" id="UserID" placeholder="UserID">
+                <input type="password" id="UserPass" placeholder="Password">
+                <button type = "submit"id="RG_button" class="btn">Register Group</button>
+                <button type = "submit"id="JG_button" class="btn">Join Group</button>
+                <button type = "submit"id="L_button" class="btn">Login</button>
+            </form>
+        </div>
+        <script src="start.js"></script>
+    </body>
 </html>
