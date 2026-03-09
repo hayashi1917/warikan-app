@@ -252,41 +252,61 @@
     </div>
 
     <script>
-        // 認証情報の取得（localStorageから）
-        const CURRENT_GROUP_ID = localStorage.getItem('current_group_id');
-        const CURRENT_GROUP = localStorage.getItem('current_group');
-        const CURRENT_USER = localStorage.getItem('current_user');
+        // 認証情報とメンバー一覧（ページ初期化時にセッション API から取得する）
+        let CURRENT_GROUP_ID = null;
+        let CURRENT_GROUP = null;
+        let CURRENT_USER = null;
+        let MEMBER_NAMES = [];
 
-        // ログインしていない場合は戻す
-        if (!CURRENT_GROUP_ID || !CURRENT_GROUP || !CURRENT_USER) {
-            alert("ログイン情報がありません。TOPページに戻ります。");
-            window.location.href = "/";
-        }
-
-        document.getElementById('display-user').innerText = `User: ${CURRENT_USER}`;
-        document.getElementById('display-group').innerText = `Group: ${CURRENT_GROUP}`;
-
-        const MEMBER_NAMES = {{ member_names | tojson }};
         const CURRENCY_OPTIONS = ["JPY", "USD", "EUR", "GBP"];
         let payments = [];
 
-        // ページ読み込み時にデータを取得
+        // ページ読み込み時にセッション情報を取得してから初期化する
         window.onload = async () => {
+            await loadSessionInfo();
             initializeMemberSelectors();
             await loadPayments();
         };
 
+        // --- 0. セッション情報の取得 ---
+        async function loadSessionInfo() {
+            try {
+                const response = await fetch('/register/me');
+                if (!response.ok) {
+                    alert("ログイン情報がありません。TOPページに戻ります。");
+                    window.location.href = "/";
+                    return;
+                }
+                const data = await response.json();
+                CURRENT_GROUP_ID = data.group_id;
+                CURRENT_GROUP = data.group_name;
+                CURRENT_USER = data.user_name;
+
+                document.getElementById('display-user').innerText = `User: ${CURRENT_USER}`;
+                document.getElementById('display-group').innerText = `Group: ${CURRENT_GROUP}`;
+
+                // メンバー一覧もサーバーから取得する
+                const membersResponse = await fetch(`/payment/members`);
+                if (membersResponse.ok) {
+                    const membersData = await membersResponse.json();
+                    MEMBER_NAMES = membersData.members || [];
+                }
+            } catch (e) {
+                alert("セッション情報の取得に失敗しました。");
+                window.location.href = "/";
+            }
+        }
+
         // --- 1. バックエンドからのデータ取得 ---
         async function loadPayments() {
             try {
-                const response = await fetch(`/payment/list?group_id=${CURRENT_GROUP_ID}`);
+                const response = await fetch(`/payment/list`);
                 if (!response.ok) throw new Error("データ取得失敗");
                 const result = await response.json();
                 payments = result.all || [];
                 render();
             } catch (e) {
                 console.error(e);
-                // 本番運用前はモックデータでテスト可能
             }
         }
 
@@ -354,7 +374,7 @@
             const selectedCurrency = document.getElementById('currency-select').value || 'JPY';
 
             const newData = {
-                group_id: parseInt(CURRENT_GROUP_ID),
+                group_id: CURRENT_GROUP_ID,
                 title: `${payerName}の立替`,
                 amount_total: total,
                 currency_code: selectedCurrency,
@@ -383,7 +403,7 @@
         // --- 3. 承認処理（POST） ---
         async function approvePayment(paymentId) {
             try {
-                await fetch(`/payment/authenticate?group_id=${CURRENT_GROUP_ID}&payment_id=${paymentId}`, {
+                await fetch(`/payment/authenticate?payment_id=${paymentId}`, {
                     method: 'POST',
                 });
                 await loadPayments();
@@ -411,13 +431,13 @@
             }
         }
 
-        // --- 5. 最小フロー計算（POST） ---
+        // --- 5. 最小フロー精算計算（GET） ---
         async function calculateMinFlow() {
             const outputDiv = document.getElementById('Output');
             outputDiv.innerText = "計算中...";
 
             try {
-                const response = await fetch(`/payment/settlements?group_id=${CURRENT_GROUP_ID}`);
+                const response = await fetch(`/payment/settlements`);
                 const result = await response.json();
                 const settlements = result?.result?.settlements || [];
                 outputDiv.innerText = settlements.length

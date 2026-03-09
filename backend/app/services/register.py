@@ -6,6 +6,7 @@
 
 from typing import Any, Dict, List, Optional
 
+import pymysql
 import pymysql.cursors
 
 from app.auth.auth import hash_password, verify_password
@@ -55,39 +56,39 @@ def get_group_by_name(group_name: str) -> Optional[Dict[str, Any]]:
 
 
 # グループ新規作成とリーダーユーザー作成
-# 一連の登録は同一トランザクションにまとめ、途中失敗時の不整合を防止する。
+# DB の UNIQUE 制約で重複を防止し、レースコンディションを回避する。
 def create_group_with_leader(group_name: str, leader_user_name: str, leader_password: str) -> Dict[str, Any]:
     ensure_schema()
 
-    if get_group_by_name(group_name):
+    try:
+        with mysql_connection() as conn:
+            with conn.cursor() as cur:
+                group_id = _create_group(cur, group_name)
+                cur.execute(
+                    "INSERT INTO `users` (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
+                    (group_id, leader_user_name, hash_password(leader_password)),
+                )
+            conn.commit()
+    except pymysql.IntegrityError:
         raise ValueError("group_name already exists")
-
-    with mysql_connection() as conn:
-        with conn.cursor() as cur:
-            group_id = _create_group(cur, group_name)
-            cur.execute(
-                "INSERT INTO `users` (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
-                (group_id, leader_user_name, hash_password(leader_password)),
-            )
-        conn.commit()
 
     return {"group_id": group_id, "group_name": group_name, "leader_user_name": leader_user_name}
 
 
 # グループ所属ユーザーの作成
-# 同一グループ内でのユーザー名重複を防止し、API から利用しやすい辞書形式で返却する。
+# PK 制約 (group_id, user_name) で重複を防止し、レースコンディションを回避する。
 def create_user(group_id: int, user_name: str, password: str) -> Dict[str, Any]:
-    if get_user(group_id, user_name):
-        raise ValueError("user_name already exists in this group")
-
     password_hash = hash_password(password)
-    with mysql_connection() as conn:
-        with conn.cursor() as cur:
-            cur.execute(
-                "INSERT INTO `users` (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
-                (group_id, user_name, password_hash),
-            )
-        conn.commit()
+    try:
+        with mysql_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    "INSERT INTO `users` (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
+                    (group_id, user_name, password_hash),
+                )
+            conn.commit()
+    except pymysql.IntegrityError:
+        raise ValueError("user_name already exists in this group")
     return {"group_id": group_id, "user_name": user_name}
 
 

@@ -18,6 +18,21 @@ def start(request: Request):
     return templates.TemplateResponse("start.html", {"request": request})
 
 
+@router.get("/me", name="register.me")
+def me(request: Request):
+    """セッションに保存されたログイン情報を返す。
+
+    フロント側が localStorage ではなくこの API を使うことで、
+    認証情報の管理をサーバーサイドセッションに一元化する。
+    """
+    group_id = request.session.get("group_id")
+    group_name = request.session.get("group_name")
+    user_name = request.session.get("user_name")
+    if not group_id or not user_name:
+        return JSONResponse(status_code=401, content={"message": "error", "detail": "ログインしていません"})
+    return {"group_id": group_id, "group_name": group_name, "user_name": user_name}
+
+
 @router.post("/register_group")
 def register_group_post(req: GroupCreateRequest, request: Request):
     """グループ作成 API。
@@ -53,6 +68,7 @@ def register_group_post(req: GroupCreateRequest, request: Request):
 
 @router.post("/join_group")
 def join_group_post(req: GroupCreateRequest, request: Request):
+    """既存グループへの参加 API。グループ名で検索し、新規ユーザーを作成する。"""
     try:
         group = get_group_by_name(req.group_name)
         if not group:
@@ -83,6 +99,7 @@ def join_group_post(req: GroupCreateRequest, request: Request):
 
 @router.post("/login")
 def login_post(req: LoginRequest, request: Request):
+    """ログイン API。グループ名とユーザー名・パスワードで認証する。"""
     try:
         group = get_group_by_name(req.group_name)
         if not group:
