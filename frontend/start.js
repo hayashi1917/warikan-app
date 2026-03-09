@@ -1,21 +1,41 @@
 document.getElementById('subForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const btnId = e.submitter.id;
+    const GroupID = document.getElementById("GroupID").value;
+    const UserID = document.getElementById("UserID").value;
+    const UserPass = document.getElementById("UserPass").value;
 
-    let apiurl = "";
-    if (btnId === "RG_button"){apiurl = '/api/create_group';}
-    else if (btnId === "JG_button"){apiurl = '/api/join_group';}
-    else if (btnId === "L_button"){apiurl = '/api/login';}
+    if(!GroupID){alert("Valid GroupID is required."); return}
+    if(!UserID){alert("Valid UserID is required."); return}
+    if(!UserPass){alert("Valid UserPass is required."); return}
+
+    
+    let apiUrl = "";
+    let okText = "";
+    if (btnId === "RG_button"){
+        apiUrl = '/api/create_group';
+        okText = "Group registered successfully!";
+    }
+    else if (btnId === "JG_button"){
+        apiUrl = '/api/join_group';
+        okText = "Successfully joined the group!";
+
+    }
+    else if (btnId === "L_button"){
+        apiUrl = '/api/login';
+        okText = "Login successful!";
+    }
+    
     try {
-        const response = await fetch(apiurl, {
+        const response = await fetch(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                group_name: document.getElementById("GroupID").value,
-                user_name: document.getElementById("UserID").value,
-                password: document.getElementById("UserPass").value})
+                group_name:GroupID,
+                user_name: UserID,
+                password: UserPass})
         });
 
         const data = await response.json();
@@ -23,9 +43,9 @@ document.getElementById('subForm').addEventListener('submit', async (e) => {
         if (response.ok) {
             localStorage.setItem("current_group", data.group_name);
             localStorage.setItem("current_user", data.user_name);
-            alert("Successfully Registered");
+            alert(okText);
             window.location.href = "/compute.html";
-        } else {alert("Error: " + (data.error || "Failed"));}
-    } catch (err) {alert("Error");}
+        } else {alert("Error: " + data.error);}
+    } catch (err) {alert("Network error");}
 });
   
