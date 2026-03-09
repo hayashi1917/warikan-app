@@ -18,7 +18,7 @@
         /* 入力エリア */
         #input-section { background: #f0f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
         .payee-row { display: flex; gap: 10px; margin-bottom: 8px; align-items: center; }
-        input { border: 1px solid #ccc; border-radius: 4px; padding: 8px 12px; font-size: 14px; }
+        input, select { border: 1px solid #ccc; border-radius: 4px; padding: 8px 12px; font-size: 14px; background: #fff; }
         input[type="number"] { width: 120px; }
         
         button { cursor: pointer; border-radius: 4px; border: none; padding: 8px 16px; transition: 0.2s; font-weight: bold; }
@@ -56,12 +56,12 @@
     <div id="input-section">
         <div style="margin-bottom: 15px;">
             <strong>支払った人:</strong> 
-            <input type="text" id="payer" placeholder="名前"> さん
+            <select id="payer"></select> さん
         </div>
 
         <div id="payeeListContainer">
             <div class="payee-row">
-                <input type="text" class="p-name" placeholder="借りた人（対象者）">
+                <select class="p-name"></select>
                 <input type="number" class="p-amount" placeholder="金額"> 円
             </div>
         </div>
@@ -96,9 +96,68 @@
     document.getElementById('display-group').innerText = `Group: ${CURRENT_GROUP}`;
 
     let payments = [];
+    let groupMembers = [];
 
     // ページ読み込み時にデータを取得
-    window.onload = loadPayments;
+    window.onload = initializePage;
+
+
+    async function initializePage() {
+        await loadGroupMembers();
+        await loadPayments();
+    }
+
+    async function loadGroupMembers() {
+        const candidates = [
+            `/api/groups/${CURRENT_GROUP}/users`,
+            `/api/users?groupID=${CURRENT_GROUP}`
+        ];
+
+        for (const url of candidates) {
+            try {
+                const response = await fetch(url);
+                if (!response.ok) continue;
+                const data = await response.json();
+                const members = normalizeMembers(data);
+                if (members.length > 0) {
+                    groupMembers = members;
+                    updateAllMemberSelects();
+                    return;
+                }
+            } catch (e) {
+                console.warn(`メンバー取得失敗: ${url}`, e);
+            }
+        }
+
+        groupMembers = [CURRENT_USER];
+        updateAllMemberSelects();
+    }
+
+    function normalizeMembers(data) {
+        if (!Array.isArray(data)) return [];
+        const names = data
+            .map(item => typeof item === 'string' ? item : item.user_name || item.userID || item.name)
+            .filter(Boolean);
+        return [...new Set(names)];
+    }
+
+    function createMemberOptions(selectedName = "") {
+        const options = groupMembers.map(name => `
+            <option value="${name}" ${name === selectedName ? 'selected' : ''}>${name}</option>
+        `).join('');
+        return options || '<option value="">メンバーなし</option>';
+    }
+
+    function updateAllMemberSelects() {
+        const payerSelect = document.getElementById('payer');
+        const selectedPayer = payerSelect.value || CURRENT_USER;
+        payerSelect.innerHTML = createMemberOptions(selectedPayer);
+
+        document.querySelectorAll('.p-name').forEach(select => {
+            const current = select.value;
+            select.innerHTML = createMemberOptions(current);
+        });
+    }
 
     // --- 1. バックエンドからのデータ取得 ---
     async function loadPayments() {
@@ -106,11 +165,21 @@
             const response = await fetch(`/api/payments?groupID=${CURRENT_GROUP}`);
             if (!response.ok) throw new Error("データ取得失敗");
             payments = await response.json();
+            mergeMembersFromPayments();
+            updateAllMemberSelects();
             render();
         } catch (e) {
             console.error(e);
             // 本番運用前はモックデータでテスト可能
         }
+    }
+
+    function mergeMembersFromPayments() {
+        const fromPayments = payments.flatMap(p => [
+            p.payer,
+            ...(Array.isArray(p.details) ? p.details.map(d => d.name) : [])
+        ]).filter(Boolean);
+        groupMembers = [...new Set([...groupMembers, ...fromPayments, CURRENT_USER])];
     }
 
     // --- 2. 支払い登録（POST） ---
@@ -200,7 +269,7 @@
         const div = document.createElement('div');
         div.className = 'payee-row';
         div.innerHTML = `
-            <input type="text" class="p-name" placeholder="名前">
+            <select class="p-name">${createMemberOptions()}</select>
             <input type="number" class="p-amount" placeholder="金額"> 円
             <button class="delete-btn" onclick="this.parentElement.remove()">×</button>
         `;
@@ -211,9 +280,10 @@
         document.getElementById('payer').value = "";
         document.getElementById('payeeListContainer').innerHTML = `
             <div class="payee-row">
-                <input type="text" class="p-name" placeholder="名前">
+                <select class="p-name">${createMemberOptions()}</select>
                 <input type="number" class="p-amount" placeholder="金額"> 円
             </div>`;
+        updateAllMemberSelects();
     }
 
     function render() {
