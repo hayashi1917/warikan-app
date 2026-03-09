@@ -14,6 +14,7 @@ class PaymentSplitRecord:
     payer: str
     beneficiary: str
     amount: Decimal
+    exchange_rate: Decimal
 
 
 def _minimize_settlements(net: Dict[str, Decimal]) -> List[Dict[str, str | float]]:
@@ -67,6 +68,7 @@ def _fetch_approved_split_records(group_id: int) -> List[PaymentSplitRecord]:
                 SELECT
                     p.payment_id,
                     p.paid_by_user_name,
+                    p.exchange_rate,
                     ps.beneficiary_user_name,
                     ps.amount
                 FROM `payments` p
@@ -94,6 +96,7 @@ def _fetch_approved_split_records(group_id: int) -> List[PaymentSplitRecord]:
             payer=row["paid_by_user_name"],
             beneficiary=row["beneficiary_user_name"],
             amount=Decimal(str(row["amount"])),
+            exchange_rate=Decimal(str(row["exchange_rate"])),
         )
         for row in rows
     ]
@@ -104,8 +107,9 @@ def calculate_group_settlements(group_id: int) -> Dict[str, object]:
 
     net: Dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
     for record in records:
-        net[record.payer] += record.amount
-        net[record.beneficiary] -= record.amount
+        converted_amount = record.amount * record.exchange_rate
+        net[record.payer] += converted_amount
+        net[record.beneficiary] -= converted_amount
 
     settlements = _minimize_settlements(net)
 
