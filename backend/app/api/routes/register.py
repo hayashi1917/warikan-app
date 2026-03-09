@@ -38,6 +38,10 @@ def register_group_post(req: GroupCreateRequest, request: Request):
             "user_name": user_name,
             "redirect_url": "/payment"
         })
+    except ValueError as e:
+        if str(e) == "group_name already exists":
+            return JSONResponse(status_code=409, content={"message": "error", "detail": str(e)})
+        return JSONResponse(status_code=400, content={"message": "error", "detail": str(e)})
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "error", "detail": str(e)})
 
@@ -104,5 +108,4 @@ def login_post(req: LoginRequest, request: Request):
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"message": "error", "detail": str(e)})
-
 
