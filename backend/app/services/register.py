@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 import pymysql.cursors
 
 from app.auth.auth import hash_password, verify_password
-from app.db.db import ensure_schema, mysql_connection
+from app.db.db import mysql_connection
 
 
 # グループ作成
@@ -57,8 +57,6 @@ def get_group_by_name(group_name: str) -> Optional[Dict[str, Any]]:
 # グループ新規作成とリーダーユーザー作成
 # 一連の登録は同一トランザクションにまとめ、途中失敗時の不整合を防止する。
 def create_group_with_leader(group_name: str, leader_user_name: str, leader_password: str) -> Dict[str, Any]:
-    ensure_schema()
-
     if get_group_by_name(group_name):
         raise ValueError("group_name already exists")
 

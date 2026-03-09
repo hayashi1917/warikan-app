@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from pydantic import AliasChoices, BaseModel, Field, model_validator
 
+
 class PaymentSplitInput(BaseModel):
     beneficiary_user_name: str = Field(
         validation_alias=AliasChoices("beneficiary_user_name", "beneficiaryUserName"),
@@ -21,11 +22,6 @@ class PaymentCreateRequest(BaseModel):
         min_length=3,
         max_length=3,
     )
-    exchange_rate: float = Field(
-        default=1.0,
-        validation_alias=AliasChoices("exchange_rate", "exchangeRate"),
-        gt=0,
-    )
     splits: list[PaymentSplitInput] = Field(min_length=1)
 
     @model_validator(mode="after")
@@ -37,28 +33,19 @@ class PaymentCreateRequest(BaseModel):
             raise ValueError("amount_total must equal the sum of split amounts")
         return self
 
+
 class GroupCreateRequest(BaseModel):
     group_name: str = Field(min_length=1, max_length=50)
     user_name: str = Field(min_length=1, max_length=50)
     password: str = Field(min_length=8, max_length=128)
 
-class UserCreateRequest(BaseModel):
+
+class LoginRequest(BaseModel):
     group_name: str = Field(min_length=1, max_length=50)
     user_name: str = Field(min_length=1, max_length=50)
     password: str = Field(min_length=8, max_length=128)
 
-class RegisterRequest(BaseModel):
-    group_name: str
-    user_name: str
-    password: str
-
-
-class LoginRequest(BaseModel):
-    group_name: str
-    user_name: str
-    password: str
-
 
 class CurrentUser(BaseModel):
-    group_name: str
+    group_id: int
     user_name: str

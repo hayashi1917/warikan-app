@@ -39,12 +39,14 @@ def payment(request: Request):
 def create_payment_post(request: Request, req: PaymentCreateRequest):
     try:
         login_user_name = request.session.get("user_name", "")
-        if not login_user_name:
+        session_group_id = request.session.get("group_id")
+        # group_id はクライアント入力ではなくセッションを正とする（他グループへの不正書き込み防止）
+        if not login_user_name or not session_group_id:
             return JSONResponse(status_code=401, content={"status": "error", "detail": "ログインが必要です"})
 
         exchange_rate = resolve_jpy_exchange_rate(req.currency_code)
         success, result = create_payment(
-            group_id=req.group_id,
+            group_id=int(session_group_id),
             login_user_name=login_user_name,
             title=req.title,
             amount_total=req.amount_total,
@@ -80,13 +82,15 @@ def delete_payment_by_id(payment_id: int, request: Request):
 
 
 @router.post("/authenticate", name="authenticate_payment")
-def authenticate_payment(request: Request, group_id: int, payment_id: int):
+def authenticate_payment(request: Request, payment_id: int):
     current_user_name = request.session.get("user_name", "")
-    if not current_user_name:
+    session_group_id = request.session.get("group_id")
+    # group_id はセッションから取得し、クエリパラメータによる他グループへの不正承認を防止する
+    if not current_user_name or not session_group_id:
         raise HTTPException(status_code=401, detail="ログインが必要です")
 
     approved = authenticate_payment_by_current_user(
-        group_id=group_id,
+        group_id=int(session_group_id),
         payment_id=payment_id,
         current_user_name=current_user_name,
     )
@@ -96,7 +100,12 @@ def authenticate_payment(request: Request, group_id: int, payment_id: int):
 
 
 @router.get("/list", name="list_payments")
-def list_payments(group_id: int = Query(..., gt=0)):
+def list_payments(request: Request, group_id: int = Query(..., gt=0)):
+    session_group_id = request.session.get("group_id")
+    if not session_group_id:
+        return JSONResponse(status_code=401, content={"status": "error", "detail": "ログインが必要です"})
+    if int(session_group_id) != group_id:
+        return JSONResponse(status_code=403, content={"status": "error", "detail": "権限がありません"})
     try:
         payments = list_group_payments(group_id)
         return {
@@ -106,12 +115,17 @@ def list_payments(group_id: int = Query(..., gt=0)):
             "approved": [p for p in payments if p["is_approved"]],
         }
     except Exception as exc:
-        return JSONResponse(status_code=500, content={"status": "error", "detail": str(exc)})
+        return JSONResponse(status_code=500, content={"status": "error", "detail": "内部エラーが発生しました"})
 
 
 @router.get("/settlements", name="settlements")
-def settlements(group_id: int = Query(..., gt=0)):
+def settlements(request: Request, group_id: int = Query(..., gt=0)):
+    session_group_id = request.session.get("group_id")
+    if not session_group_id:
+        return JSONResponse(status_code=401, content={"status": "error", "detail": "ログインが必要です"})
+    if int(session_group_id) != group_id:
+        return JSONResponse(status_code=403, content={"status": "error", "detail": "権限がありません"})
     try:
         return {"status": "success", "result": calculate_group_settlements(group_id)}
     except Exception as exc:
-        return JSONResponse(status_code=500, content={"status": "error", "detail": str(exc)})
+        return JSONResponse(status_code=500, content={"status": "error", "detail": "内部エラーが発生しました"})
