@@ -173,6 +173,26 @@
             padding: 4px 8px;
         }
 
+        .payment-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .delete-payment-btn {
+            background: transparent;
+            color: var(--danger-color);
+            border: 1px solid var(--danger-color);
+            font-size: 0.8rem;
+            padding: 6px 10px;
+        }
+
+        .delete-payment-btn:hover {
+            background: var(--danger-color);
+            color: #fff;
+        }
+
         /* 出力エリア */
         #Output {
             margin-top: 20px;
@@ -349,7 +369,26 @@
             }
         }
 
-        // --- 4. 最小フロー計算（POST） ---
+        // --- 4. 支払い削除（DELETE） ---
+        async function deletePayment(paymentId) {
+            const confirmed = confirm("この支払い申請を削除しますか？\n※作成者のみ削除できます。");
+            if (!confirmed) return;
+
+            try {
+                const response = await fetch(`/payment/${paymentId}`, {
+                    method: 'DELETE'
+                });
+                const result = await response.json();
+                if (!response.ok || result.status !== 'success') {
+                    throw new Error(result.detail || '削除に失敗しました');
+                }
+                await loadPayments();
+            } catch (e) {
+                alert(e.message || '削除に失敗しました。');
+            }
+        }
+
+        // --- 5. 最小フロー計算（POST） ---
         async function calculateMinFlow() {
             const outputDiv = document.getElementById('Output');
             outputDiv.innerText = "計算中...";
@@ -412,12 +451,16 @@
                     <small class="detail-text">内訳: ${detailStr}</small><br>
                     <small class="approval-status">承認済: ${p.approvedBy.join(', ')}</small>
                 </div>
-                <div>
+                <div class="payment-actions">
                     ${!isFullyApproved ?
                         `<button class="approve-btn" ${!needsMyApproval ? 'disabled' : ''} onclick="approvePayment(${p.id})">
                             ${needsMyApproval ? '承認する' : '承認待ち'}
                         </button>` :
                         `<span style="color:green; font-weight:bold;">✓ 完了</span>`
+                    }
+                    ${p.payer === CURRENT_USER ?
+                        `<button class="delete-payment-btn" onclick="deletePayment(${p.id})">この申請を削除</button>` :
+                        ''
                     }
                 </div>
             `;

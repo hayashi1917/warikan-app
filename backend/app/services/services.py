@@ -41,6 +41,7 @@ def fetch_frankfurter_rates(
 
 __all__ = [
     "create_payment",
+    "delete_payment",
     "authenticate_payment_by_current_user",
     "list_group_payments",
     "fetch_frankfurter_rates",
@@ -98,6 +99,27 @@ def authenticate_payment_by_current_user(group_id: int, payment_id: int, current
             conn.commit()
     return updated_rows > 0
 
+
+def delete_payment(group_id: int, payment_id: int, current_user_name: str) -> Tuple[bool, str]:
+    """Delete a payment created by the current user in the current group."""
+    try:
+        with mysql_connection() as conn:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    DELETE FROM `payments`
+                    WHERE payment_id = %s AND group_id = %s AND paid_by_user_name = %s
+                    """,
+                    (payment_id, group_id, current_user_name),
+                )
+                deleted_rows = cur.rowcount
+            conn.commit()
+
+        if deleted_rows == 0:
+            return False, "削除対象が見つからないか、削除権限がありません。"
+        return True, "ok"
+    except Exception as e:
+        return False, str(e)
 
 def list_group_payments(group_id: int) -> List[Dict[str, Any]]:
     with mysql_connection() as conn:
