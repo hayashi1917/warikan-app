@@ -1,13 +1,10 @@
-import hashlib
-import hmac
+"""DB 接続管理とスキーマ初期化モジュール。"""
+
 import os
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, List, Optional
+from typing import Any, Dict, Generator
 
 import pymysql
-from passlib.context import CryptContext
-
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def _mysql_config() -> Dict[str, Any]:
@@ -37,7 +34,8 @@ def ensure_schema() -> None:
         """
         CREATE TABLE IF NOT EXISTS `groups` (
           group_id INT AUTO_INCREMENT PRIMARY KEY,
-          group_name VARCHAR(50) NOT NULL
+          group_name VARCHAR(50) NOT NULL,
+          UNIQUE KEY uq_group_name (group_name)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
         """,
         """

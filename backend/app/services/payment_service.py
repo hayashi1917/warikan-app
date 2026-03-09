@@ -65,25 +65,29 @@ def create_payment(
 ) -> Tuple[bool, int | str]:
     try:
         with mysql_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(
-                    """
-                    INSERT INTO `payments` (group_id, paid_by_user_name, title, amount_total, currency_code, exchange_rate)
-                    VALUES (%s, %s, %s, %s, %s, %s)
-                    """,
-                    (group_id, login_user_name, title, amount_total, currency_code.upper(), exchange_rate),
-                )
-                payment_id = int(cur.lastrowid)
-
-                for split in splits:
+            try:
+                with conn.cursor() as cur:
                     cur.execute(
                         """
-                        INSERT INTO `payment_splits` (payment_id, group_id, beneficiary_user_name, amount)
-                        VALUES (%s, %s, %s, %s)
+                        INSERT INTO `payments` (group_id, paid_by_user_name, title, amount_total, currency_code, exchange_rate)
+                        VALUES (%s, %s, %s, %s, %s, %s)
                         """,
-                        (payment_id, group_id, split["beneficiary_user_name"], split["amount"]),
+                        (group_id, login_user_name, title, amount_total, currency_code.upper(), exchange_rate),
                     )
-            conn.commit()
+                    payment_id = int(cur.lastrowid)
+
+                    for split in splits:
+                        cur.execute(
+                            """
+                            INSERT INTO `payment_splits` (payment_id, group_id, beneficiary_user_name, amount)
+                            VALUES (%s, %s, %s, %s)
+                            """,
+                            (payment_id, group_id, split["beneficiary_user_name"], split["amount"]),
+                        )
+                conn.commit()
+            except Exception:
+                conn.rollback()
+                raise
     except Exception as exc:
         return False, str(exc)
 
