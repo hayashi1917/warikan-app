@@ -5,7 +5,7 @@ const ACCESS_TOKEN = localStorage.getItem('accessToken');
 
 // ログインしていない場合は戻す
 if (!CURRENT_GROUP || !CURRENT_USER || !ACCESS_TOKEN) {
-    alert("ログイン情報がありません。TOPページに戻ります。");
+    alert("You are not logged in. Please log in first.");
     window.location.href = "index.html"; 
 }
 
@@ -24,9 +24,11 @@ async function loadPayments() {
         const response = await fetch(`/api/payments?groupID=${CURRENT_GROUP}`, {
             headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` },
         });
-        if (!response.ok) {
-            const body = await response.text();
-            throw new Error(`データ取得失敗: HTTP ${response.status} ${body}`);
+        if (response.status === 401) {
+            alert("Error 401: Failed to authenticate. Please log in again.");
+            localStorage.clear();
+            window.location.href = "index.html";
+            return;
         }
         payments = await response.json();
         render();
@@ -53,13 +55,13 @@ async function registerPayment() {
     });
 
     if (!details.length) {
-        alert("入力内容が不完全です");
+        alert("Input data is incomplete.");
         return;
     }
 
     const newData = {
         group_id: Number(CURRENT_GROUP),
-        title: `支払い申請 by ${CURRENT_USER}`,
+        title: `Payment Request by ${CURRENT_USER}`,
         amount_total: total,
         currency_code: "JPY",
         exchange_rate: 1,
@@ -77,15 +79,21 @@ async function registerPayment() {
                         'Authorization': `Bearer ${ACCESS_TOKEN}`},
             body: JSON.stringify(newData)
         });
+        if (response.status === 401) {
+            alert("Error 401: Failed to authenticate. Please log in again.");
+            localStorage.clear();
+            window.location.href = "index.html";
+            return;
+        }
         if (!response.ok) {
             const body = await response.text();
-            throw new Error(`保存失敗: HTTP ${response.status} ${body}`);
+            throw new Error(`Failed to save: HTTP ${response.status} ${body}`);
         }
         clearInput();
         await loadPayments();
     } catch (e) {
         console.error(e);
-        alert(`保存に失敗しました。\n${e.message}`);
+        alert(`${e.message}`);
     }
 }
 
@@ -96,21 +104,27 @@ async function approvePayment(paymentId) {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` },
         });
+        if (response.status === 401) {
+            alert("Error 401: Failed to authenticate. Please log in again.");
+            localStorage.clear();
+            window.location.href = "index.html";
+            return;
+        }
         if (!response.ok) {
             const body = await response.text();
-            throw new Error(`承認失敗: HTTP ${response.status} ${body}`);
+            throw new Error(`Failed to authenticate: HTTP ${response.status} ${body}`);
         }
         await loadPayments();
     } catch (e) {
         console.error(e);
-        alert(`承認に失敗しました。\n${e.message}`);
+        alert(`${e.message}`);
     }
 }
 
 // --- 4. 最小フロー計算（POST） ---
 async function calculateMinFlow() {
     const outputDiv = document.getElementById('Output');
-    outputDiv.innerText = "計算中...";
+    outputDiv.innerText = "Calculating...";
 
     try {
         const response = await fetch(`/api/create-matrix?groupID=${CURRENT_GROUP}`, {
@@ -119,14 +133,20 @@ async function calculateMinFlow() {
                         'Authorization': `Bearer ${ACCESS_TOKEN}`,
             },
         });
+        if (response.status === 401) {
+            alert("Error 401: Failed to authenticate. Please log in again.");
+            localStorage.clear();
+            window.location.href = "index.html";
+            return;
+        }
         if (!response.ok) {
             const body = await response.text();
-            throw new Error(`計算失敗: HTTP ${response.status} ${body}`);
+            throw new Error(`Failed to calculate: HTTP ${response.status} ${body}`);
         }
         const result = await response.json();
-        outputDiv.innerText = result.instructions.join('\n') || "清算の必要はありません。";
+        outputDiv.innerText = result.instructions.join('\n') || "You are all settled up!";
     } catch (e) {
-        outputDiv.innerText = `計算データの取得に失敗しました。\n${e.message}`;
+        outputDiv.innerText = `Failed to retrieve calculation data.\n${e.message}`;
     }
 }
 
@@ -136,8 +156,8 @@ function addPayeeRow() {
     const div = document.createElement('div');
     div.className = 'payee-row';
     div.innerHTML = `
-        <input type="text" class="p-name" placeholder="名前">
-        <input type="number" class="p-amount" placeholder="金額"> 円
+        <input type="text" class="p-name" placeholder="Name">
+        <input type="number" class="p-amount" placeholder="Amount"> Yen
         <button class="delete-btn" onclick="this.parentElement.remove()">×</button>
     `;
     container.appendChild(div);
@@ -147,8 +167,8 @@ function clearInput() {
     document.getElementById('payer').value = CURRENT_USER;
     document.getElementById('payeeListContainer').innerHTML = `
         <div class="payee-row">
-            <input type="text" class="p-name" placeholder="名前">
-            <input type="number" class="p-amount" placeholder="金額"> 円
+            <input type="text" class="p-name" placeholder="Name">
+            <input type="number" class="p-amount" placeholder="Amount"> Yen
         </div>`;
 }
 
@@ -164,23 +184,23 @@ function render() {
         const isFullyApproved = targetNames.every(name => p.approvedBy.includes(name));
 
         const li = document.createElement('li');
-        const detailStr = p.details.map(d => `${d.name}(${d.amount}円)`).join(', ');
+        const detailStr = p.details.map(d => `${d.name}(${d.amount}Yen)`).join(', ');
         
         // 自分の承認が必要か
         const needsMyApproval = targetNames.includes(CURRENT_USER) && !p.approvedBy.includes(CURRENT_USER);
 
         li.innerHTML = `
             <div class="main-info">
-                <span>${p.payer}</span> → ${p.total}円<br>
-                <small class="detail-text">内訳: ${detailStr}</small><br>
-                <small class="approval-status">承認済: ${p.approvedBy.join(', ')}</small>
+                <span>${p.payer}</span> → ${p.total}Yen<br>
+                <small class="detail-text">Details: ${detailStr}</small><br>
+                <small class="approval-status">Approved: ${p.approvedBy.join(', ')}</small>
             </div>
             <div>
                 ${!isFullyApproved ? 
                     `<button class="approve-btn" ${!needsMyApproval ? 'disabled' : ''} onclick="approvePayment(${p.id})">
-                        ${needsMyApproval ? '承認する' : '承認待ち'}
+                        ${needsMyApproval ? 'Approve' : 'Pending Approval'}
                     </button>` : 
-                    `<span class="complete-message">✓ 完了</span>`
+                    `<span class="complete-message">✓ Complete</span>`
                 }
             </div>
         `;
