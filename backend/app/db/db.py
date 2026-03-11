@@ -8,7 +8,7 @@ import pymysql
 
 
 def _mysql_config() -> Dict[str, Any]:
-    return {
+    config = {
         "host": os.getenv("MYSQL_HOST", "127.0.0.1"),
         "port": int(os.getenv("MYSQL_PORT", "3306")),
         "user": os.getenv("MYSQL_USER", "root"),
@@ -18,6 +18,10 @@ def _mysql_config() -> Dict[str, Any]:
         "autocommit": False,
         "cursorclass": pymysql.cursors.DictCursor,
     }
+    # Azure Database for MySQL は SSL 接続を要求する
+    if os.getenv("MYSQL_SSL", "").lower() == "true":
+        config["ssl"] = {"ca": "/etc/ssl/certs/ca-certificates.crt"}
+    return config
 
 
 @contextmanager
