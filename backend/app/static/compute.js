@@ -69,10 +69,8 @@ function buildMemberOptions(includeEmpty = true) {
 
 function initializeMemberSelectors() {
     const payerSelect = document.getElementById('payer');
-    payerSelect.innerHTML = buildMemberOptions();
-    if (MEMBER_NAMES.includes(CURRENT_USER)) {
-        payerSelect.value = CURRENT_USER;
-    }
+    payerSelect.innerHTML = `<option value="${CURRENT_USER}">${CURRENT_USER}</option>`;
+    payerSelect.value = CURRENT_USER;
 
     document.querySelectorAll('.p-name').forEach(select => {
         select.innerHTML = buildMemberOptions();
@@ -102,7 +100,8 @@ function formatCurrencyAmount(amount, currencyCode) {
 
 // --- 2. 支払い登録（POST） ---
 async function registerPayment() {
-    const payerName = document.getElementById('payer').value;
+    // 支払い請求の作成は、立て替えた人のみが作成すると想定
+    const payerName = CURRENT_USER;
     const nameInputs = document.querySelectorAll('.p-name');
     const amountInputs = document.querySelectorAll('.p-amount');
 
@@ -215,7 +214,7 @@ function addPayeeRow() {
 }
 
 function clearInput() {
-    document.getElementById('payer').value = "";
+    document.getElementById('payer').value = CURRENT_USER;
     document.getElementById('currency-select').value = 'JPY';
     document.getElementById('payeeListContainer').innerHTML = `
             <div class="payee-row">

@@ -59,3 +59,10 @@ class CurrentUser(BaseModel):
     """現在ログイン中のユーザー情報。"""
     group_name: str
     user_name: str
+
+class PaymentSplitRecord(BaseModel):
+    payment_id: int
+    payer: str
+    beneficiary: str
+    amount: Decimal
+    exchange_rate: Decimal
