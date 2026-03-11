@@ -17,45 +17,39 @@ class PaymentSplitRecord:
     exchange_rate: Decimal
 
 
-def _minimize_settlements(net: Dict[str, Decimal]) -> List[Dict[str, str | float]]:
-    creditors: List[Tuple[str, Decimal]] = sorted(
-        [(name, amount) for name, amount in net.items() if amount > 0],
-        key=lambda x: x[1],
-        reverse=True,
-    )
-    debtors: List[Tuple[str, Decimal]] = sorted(
-        [(name, -amount) for name, amount in net.items() if amount < 0],
-        key=lambda x: x[1],
-        reverse=True,
-    )
-
-    i = 0
-    j = 0
+def _pairwise_settlements(
+    pairwise: Dict[Tuple[str, str], Decimal],
+) -> List[Dict[str, str | float]]:
     settlements: List[Dict[str, str | float]] = []
+    processed: set[Tuple[str, str]] = set()
 
-    while i < len(creditors) and j < len(debtors):
-        creditor_name, creditor_amount = creditors[i]
-        debtor_name, debtor_amount = debtors[j]
-        transfer = min(creditor_amount, debtor_amount)
+    for (payer, beneficiary) in pairwise:
+        pair = (min(payer, beneficiary), max(payer, beneficiary))
+        if pair in processed:
+            continue
+        processed.add(pair)
 
-        settlements.append(
-            {
-                "from_user_name": debtor_name,
-                "to_user_name": creditor_name,
-                "amount": float(transfer),
-            }
-        )
+        a, b = pair
+        a_paid_for_b = pairwise.get((a, b), Decimal("0"))
+        b_paid_for_a = pairwise.get((b, a), Decimal("0"))
+        net = a_paid_for_b - b_paid_for_a
 
-        creditor_amount -= transfer
-        debtor_amount -= transfer
-
-        creditors[i] = (creditor_name, creditor_amount)
-        debtors[j] = (debtor_name, debtor_amount)
-
-        if creditor_amount == 0:
-            i += 1
-        if debtor_amount == 0:
-            j += 1
+        if net > 0:
+            settlements.append(
+                {
+                    "from_user_name": b,
+                    "to_user_name": a,
+                    "amount": float(net),
+                }
+            )
+        elif net < 0:
+            settlements.append(
+                {
+                    "from_user_name": a,
+                    "to_user_name": b,
+                    "amount": float(-net),
+                }
+            )
 
     return settlements
 
@@ -105,13 +99,13 @@ def _fetch_approved_split_records(group_id: int) -> List[PaymentSplitRecord]:
 def calculate_group_settlements(group_id: int) -> Dict[str, object]:
     records = _fetch_approved_split_records(group_id)
 
-    net: Dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    pairwise: Dict[Tuple[str, str], Decimal] = defaultdict(lambda: Decimal("0"))
     for record in records:
-        converted_amount = record.amount * record.exchange_rate
-        net[record.payer] += converted_amount
-        net[record.beneficiary] -= converted_amount
+        if record.payer != record.beneficiary:
+            converted_amount = record.amount * record.exchange_rate
+            pairwise[(record.payer, record.beneficiary)] += converted_amount
 
-    settlements = _minimize_settlements(net)
+    settlements = _pairwise_settlements(pairwise)
 
     return {
         "group_id": group_id,
