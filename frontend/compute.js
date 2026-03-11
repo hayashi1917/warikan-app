@@ -55,7 +55,7 @@ async function registerPayment() {
     });
 
     if (!details.length) {
-        alert("Input data is incomplete.");
+        alert("Please enter at least one valid name and amount.");
         return;
     }
 
@@ -87,7 +87,7 @@ async function registerPayment() {
         }
         if (!response.ok) {
             const body = await response.text();
-            throw new Error(`Failed to save: HTTP ${response.status} ${body}`);
+            throw new Error(`Failed to authenticate : HTTP ${response.status} ${body}`);
         }
         clearInput();
         await loadPayments();
@@ -146,7 +146,7 @@ async function calculateMinFlow() {
         const result = await response.json();
         outputDiv.innerText = result.instructions.join('\n') || "You are all settled up!";
     } catch (e) {
-        outputDiv.innerText = `Failed to retrieve calculation data.\n${e.message}`;
+        outputDiv.innerText = `Failed to retrieve settlement results.\n${e.message}`;
     }
 }
 
