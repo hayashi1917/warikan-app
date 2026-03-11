@@ -69,10 +69,7 @@ function buildMemberOptions(includeEmpty = true) {
 
 function initializeMemberSelectors() {
     const payerSelect = document.getElementById('payer');
-    payerSelect.innerHTML = buildMemberOptions();
-    if (MEMBER_NAMES.includes(CURRENT_USER)) {
-        payerSelect.value = CURRENT_USER;
-    }
+    payerSelect.innerHTML = CURRENT_USER;
 
     document.querySelectorAll('.p-name').forEach(select => {
         select.innerHTML = buildMemberOptions();
@@ -102,7 +99,7 @@ function formatCurrencyAmount(amount, currencyCode) {
 
 // --- 2. 支払い登録（POST） ---
 async function registerPayment() {
-    const payerName = document.getElementById('payer').value;
+    const payerName = CURRENT_USER;
     const nameInputs = document.querySelectorAll('.p-name');
     const amountInputs = document.querySelectorAll('.p-amount');
 
@@ -116,11 +113,6 @@ async function registerPayment() {
             total += val;
         }
     });
-
-    if (!payerName || splits.length === 0) {
-        alert("Please fill in the required fields.");
-        return;
-    }
 
     const selectedCurrency = document.getElementById('currency-select').value || 'JPY';
 
