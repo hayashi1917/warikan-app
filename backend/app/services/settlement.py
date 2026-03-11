@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List, Tuple
 
 from app.db.db import mysql_connection
+from app.services.payment import calculate_settlements
 
 
 @dataclass
@@ -15,49 +15,6 @@ class PaymentSplitRecord:
     beneficiary: str
     amount: Decimal
     exchange_rate: Decimal
-
-
-def _minimize_settlements(net: Dict[str, Decimal]) -> List[Dict[str, str | float]]:
-    creditors: List[Tuple[str, Decimal]] = sorted(
-        [(name, amount) for name, amount in net.items() if amount > 0],
-        key=lambda x: x[1],
-        reverse=True,
-    )
-    debtors: List[Tuple[str, Decimal]] = sorted(
-        [(name, -amount) for name, amount in net.items() if amount < 0],
-        key=lambda x: x[1],
-        reverse=True,
-    )
-
-    i = 0
-    j = 0
-    settlements: List[Dict[str, str | float]] = []
-
-    while i < len(creditors) and j < len(debtors):
-        creditor_name, creditor_amount = creditors[i]
-        debtor_name, debtor_amount = debtors[j]
-        transfer = min(creditor_amount, debtor_amount)
-
-        settlements.append(
-            {
-                "from_user_name": debtor_name,
-                "to_user_name": creditor_name,
-                "amount": float(transfer),
-            }
-        )
-
-        creditor_amount -= transfer
-        debtor_amount -= transfer
-
-        creditors[i] = (creditor_name, creditor_amount)
-        debtors[j] = (debtor_name, debtor_amount)
-
-        if creditor_amount == 0:
-            i += 1
-        if debtor_amount == 0:
-            j += 1
-
-    return settlements
 
 
 def _fetch_approved_split_records(group_id: int) -> List[PaymentSplitRecord]:
@@ -105,13 +62,14 @@ def _fetch_approved_split_records(group_id: int) -> List[PaymentSplitRecord]:
 def calculate_group_settlements(group_id: int) -> Dict[str, object]:
     records = _fetch_approved_split_records(group_id)
 
-    net: Dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
-    for record in records:
-        converted_amount = record.amount * record.exchange_rate
-        net[record.payer] += converted_amount
-        net[record.beneficiary] -= converted_amount
+    # DB レコードを (payer, beneficiary, amount_jpy) のタプルリストに変換
+    payment_records: List[Tuple[str, str, Decimal]] = [
+        (record.payer, record.beneficiary, record.amount * record.exchange_rate)
+        for record in records
+    ]
 
-    settlements = _minimize_settlements(net)
+    # ペアごとの相殺方式で精算を計算
+    settlements = calculate_settlements(payment_records)
 
     return {
         "group_id": group_id,
