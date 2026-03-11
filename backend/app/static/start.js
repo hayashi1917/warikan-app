@@ -46,6 +46,6 @@ document.getElementById('subForm').addEventListener('submit', async (e) => {
             localStorage.setItem("current_user", data.user_name);
             alert(okText);
             window.location.href = data.redirect_url || "/payment";
-        } else { alert("Error: " + data.error); }
+        } else { alert("Error: " + data.detail); }
     } catch (err) { alert("Network error"); }
 });

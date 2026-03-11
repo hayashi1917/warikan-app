@@ -39,6 +39,9 @@ def register_group_post(req: GroupCreateRequest, request: Request):
 
     画面遷移は `redirect_url` として返すだけにし、フロント側が自由に遷移制御できるようにする。
     """
+    if get_group_by_name(req.group_name):
+        return JSONResponse(status_code=409, content={"message": "error", "detail": "group_name already exists"})
+
     try:
         result = create_group_with_leader(req.group_name, req.user_name, req.password)
         group_id = result["group_id"]
@@ -59,8 +62,6 @@ def register_group_post(req: GroupCreateRequest, request: Request):
             }
         )
     except ValueError as exc:
-        if str(exc) == "group_name already exists":
-            return JSONResponse(status_code=409, content={"message": "error", "detail": str(exc)})
         return JSONResponse(status_code=400, content={"message": "error", "detail": str(exc)})
     except Exception as exc:
         return JSONResponse(status_code=500, content={"message": "error", "detail": str(exc)})
