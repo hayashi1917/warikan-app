@@ -105,7 +105,7 @@ def authenticate_payment(request: Request, payment_id: int):
         current_user_name=current_user_name,
     )
     if not approved:
-        raise HTTPException(status_code=404, detail="承認対象が見つかりません")
+        raise HTTPException(status_code=404, detail="Payment not found")
     return {"status": "success", "payment_id": payment_id, "approved_by": current_user_name}
 
 

@@ -1,112 +1,32 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Login/Sign Up -FairShare</title>
+        <link href="/static/style.css" rel="stylesheet">
+    </head>
+    <body>
+        <header>        
+            <a href="{{ url_for('home') }}"><img src="/static/logo.svg" alt="FairShare" width="250"></a>
 
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Start - FairShare</title>
-    <style>
-        :root {
-            color-scheme: dark;
-        }
-
-        * {
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #111;
-            color: #e0e0e0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 400px;
-            text-align: center;
-        }
-
-        input {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 1rem;
-            border-radius: 8px;
-            color: #fff;
-        }
-
-        .btn {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 1rem;
-            display: block;
-            text-align: center;
-            text-decoration: none;
-            background: #33d;
-            color: #e0e0e0;
-            transition: background 0.3s;
-            border: none;
-            border-radius: 8px;
-        }
-
-        .btn:hover {
-            background: #66f;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <h2>グループ登録・ログイン</h2>
-        <form id="subForm" class="form-group">
-            <input type="text" name="group_name" id="group_name" placeholder="グループ名">
-            <input type="text" name="user_name" id="user_name" placeholder="ユーザー名">
-            <input type="password" id="password" placeholder="パスワード">
-            <button type="submit" id="RG_button" class="btn">グループ作成</button>
-            <button type="submit" id="JG_button" class="btn">グループ参加</button>
-            <button type="submit" id="L_button" class="btn">ログイン</button>
-        </form>
-    </div>
-
-
-    <script>
-        document.getElementById('subForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const btnId = e.submitter.id;
-
-            let apiUrl = "";
-            if (btnId === "RG_button") { apiUrl = '/register/register_group'; }
-            else if (btnId === "JG_button") { apiUrl = '/register/join_group'; }
-            else if (btnId === "L_button") { apiUrl = '/register/login'; }
-            try {
-                const response = await fetch(apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        group_name: document.getElementById("group_name").value,
-                        user_name: document.getElementById("user_name").value,
-                        password: document.getElementById("password").value
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.message === "ok") {
-                    // 認証情報はサーバーサイドセッションで管理するため、localStorageには保存しない
-                    window.location.href = data.redirect_url;
-                } else {
-                    alert("エラー: " + (data.detail || "処理に失敗しました"));
-                }
-            } catch (err) { alert("通信エラーが発生しました"); }
-        });
-    </script>
-
-</body>
-
+            <nav class="navlinks">
+                <a href = "{{ url_for('register.start') }}" class=>Login/Sign Up</a>
+                <a href = "{{ url_for('about') }}" class=>About</a>
+                <a href = "{{ url_for('payment') }}" class=>Compute</a>
+            </nav>
+        </header>
+        <div class="container">
+            <h1>Login/Sign Up</h1>
+            <form id ="subForm" class= "form-group">
+                <input type="text" name = "group_name"id="GroupID" placeholder="GroupID">
+                <input type="text" name = "user_name" id="UserID" placeholder="UserID">
+                <input type="password" id="UserPass" placeholder="Password">
+                <button type = "submit"id="RG_button" class="btn">Sign up Group</button>
+                <button type = "submit"id="JG_button" class="btn">Join Group</button>
+                <button type = "submit"id="L_button" class="btn">Login</button>
+            </form>
+        </div>
+        <script src="/static/start.js"></script>
+    </body>
 </html>

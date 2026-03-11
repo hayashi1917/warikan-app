@@ -4,6 +4,7 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from app.db.db import ensure_schema
@@ -30,13 +31,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# セッションはサーバーサイド認証の最小機能として利用する。
+#   
 app.add_middleware(
     SessionMiddleware,
     secret_key=os.getenv("SESSION_SECRET_KEY", "change-me-to-a-random-secret"),
 )
 
 app.include_router(api_router)
+app.mount("/static", StaticFiles(directory="app/static"), name="static")
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000, reload=True, log_level="info")

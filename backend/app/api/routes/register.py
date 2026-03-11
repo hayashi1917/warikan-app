@@ -29,7 +29,7 @@ def me(request: Request):
     group_name = request.session.get("group_name")
     user_name = request.session.get("user_name")
     if not group_id or not user_name:
-        return JSONResponse(status_code=401, content={"message": "error", "detail": "ログインしていません"})
+        return JSONResponse(status_code=401, content={"message": "error", "detail": "Login required"})
     return {"group_id": group_id, "group_name": group_name, "user_name": user_name}
 
 
