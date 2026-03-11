@@ -18,7 +18,7 @@ def _mysql_config() -> Dict[str, Any]:
         "autocommit": False,
         "cursorclass": pymysql.cursors.DictCursor,
     }
-    # Azure Database for MySQL は SSL 接続を要求する
+    # Azure Database for MySQL / Amazon RDS は SSL 接続を要求する
     if os.getenv("MYSQL_SSL", "").lower() == "true":
         config["ssl"] = {"ca": "/etc/ssl/certs/ca-certificates.crt"}
     return config

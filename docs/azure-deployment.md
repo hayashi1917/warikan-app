@@ -98,7 +98,7 @@ ACR_LOGIN_SERVER=$(az acr show --name $ACR_NAME --query loginServer -o tsv)
 
 # Docker イメージをビルド
 cd backend
-docker build -f Dockerfile.azure -t $ACR_LOGIN_SERVER/warikan-app:latest .
+docker build -f Dockerfile.prod -t $ACR_LOGIN_SERVER/warikan-app:latest .
 
 # ACR にプッシュ
 docker push $ACR_LOGIN_SERVER/warikan-app:latest

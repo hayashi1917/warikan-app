@@ -27,7 +27,7 @@ jobs:
       - name: Build and push Docker image
         working-directory: backend
         run: |
-          docker build -f Dockerfile.azure \
+          docker build -f Dockerfile.prod \
             -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:${{ github.sha }} \
             -t ${{ secrets.ACR_LOGIN_SERVER }}/${{ env.DOCKER_IMAGE_NAME }}:latest \
             .

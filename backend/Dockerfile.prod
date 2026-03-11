@@ -14,7 +14,7 @@ RUN poetry install --no-root --only main
 
 COPY . /app
 
-# Azure App Service は PORT 環境変数でリッスンポートを指定する
+# Azure App Service / AWS App Runner は PORT 環境変数でリッスンポートを指定する
 ENV PORT=8000
 EXPOSE 8000
 
