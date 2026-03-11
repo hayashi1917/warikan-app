@@ -10,6 +10,7 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 from app.db.db import mysql_connection
+from app.schemas.schemas import PaymentSplitRecord
 
 FRANKFURTER_BASE_URL = "https://api.frankfurter.dev/v1"
 

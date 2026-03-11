@@ -12,6 +12,7 @@ from app.services.payment_service import (
     list_group_payments,
     resolve_jpy_exchange_rate,
 )
+import traceback
 
 templates = Jinja2Templates(directory="app/templates")
 
@@ -26,7 +27,7 @@ def _require_login(request: Request) -> tuple[int, str]:
     group_id = request.session.get("group_id")
     user_name = request.session.get("user_name")
     if not group_id or not user_name:
-        raise HTTPException(status_code=401, detail="ログイン情報がありません")
+        raise HTTPException(status_code=401, detail="Login information is required")
     return int(group_id), str(user_name)
 
 
@@ -71,6 +72,7 @@ def create_payment_post(request: Request, req: PaymentCreateRequest):
     except HTTPException:
         raise
     except Exception as exc:
+        traceback.print_exc()
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(exc)})
 
 
@@ -91,6 +93,7 @@ def delete_payment_by_id(payment_id: int, request: Request):
     except HTTPException:
         raise
     except Exception as exc:
+        traceback.print_exc()
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(exc)})
 
 
@@ -124,6 +127,7 @@ def list_payments(request: Request):
     except HTTPException:
         raise
     except Exception as exc:
+        traceback.print_exc()
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(exc)})
 
 
@@ -136,4 +140,5 @@ def settlements(request: Request):
     except HTTPException:
         raise
     except Exception as exc:
+        traceback.print_exc()
         return JSONResponse(status_code=500, content={"status": "error", "detail": str(exc)})
