@@ -42,8 +42,6 @@ document.getElementById('subForm').addEventListener('submit', async (e) => {
         const data = await response.json();
 
         if (response.ok) {
-            localStorage.setItem("current_group", data.group_name);
-            localStorage.setItem("current_user", data.user_name);
             alert(okText);
             window.location.href = data.redirect_url || "/payment";
         } else { alert("Error: " + data.detail); }
