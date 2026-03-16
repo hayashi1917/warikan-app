@@ -74,7 +74,7 @@ docker-compose.override.yml
 # =========================
 # MySQL data (重要: 実DBファイルは絶対に管理しない)
 # =========================
-backend/mysql/
+mysql/
 # もし空ディレクトリを残したいなら backend/mysql/.gitkeep を置いて、下を有効化
 #!backend/mysql/.gitkeep
 =======
