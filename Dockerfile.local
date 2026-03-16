@@ -9,7 +9,8 @@ ENV POETRY_VIRTUALENVS_CREATE=false \
     PYTHONUNBUFFERED=1
 
 COPY pyproject.toml poetry.lock* /app/
-
 RUN poetry install --no-root
 
 COPY . /app
+
+CMD ["bash", "/app/scripts/entrypoint.local.sh"]

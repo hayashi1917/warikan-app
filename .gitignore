@@ -75,7 +75,6 @@ docker-compose.override.yml
 # MySQL data (重要: 実DBファイルは絶対に管理しない)
 # =========================
 mysql/
-!mysql/.gitkeep
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
