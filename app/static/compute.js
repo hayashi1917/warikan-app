@@ -8,11 +8,56 @@ const CURRENCY_OPTIONS = ["JPY", "USD", "EUR", "GBP"];
 let payments = [];
 
 // ページ読み込み時にセッション情報を取得してから初期化する
-window.onload = async () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    setupEventHandlers();
     await loadSessionInfo();
     initializeMemberSelectors();
     await loadPayments();
-};
+});
+
+function setupEventHandlers() {
+    const paymentForm = document.getElementById('payment-form');
+    const settlementForm = document.getElementById('settlement-form');
+    const addPayeeButton = document.getElementById('add-payee-btn');
+    const payeeListContainer = document.getElementById('payeeListContainer');
+    const unapprovedList = document.getElementById('unapprovedList');
+    const approvedList = document.getElementById('approvedList');
+
+    paymentForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await registerPayment();
+    });
+
+    settlementForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await calculateMinFlow();
+    });
+
+    addPayeeButton.addEventListener('click', addPayeeRow);
+
+    payeeListContainer.addEventListener('click', (event) => {
+        const deletePayeeButton = event.target.closest('[data-action="delete-payee"]');
+        if (!deletePayeeButton) return;
+        const row = deletePayeeButton.closest('.payee-row');
+        if (row) row.remove();
+    });
+
+    const handlePaymentAction = async (event) => {
+        const actionButton = event.target.closest('[data-action]');
+        if (!actionButton) return;
+        const paymentId = Number(actionButton.dataset.paymentId);
+        if (!Number.isFinite(paymentId)) return;
+
+        if (actionButton.dataset.action === 'approve') {
+            await approvePayment(paymentId);
+        } else if (actionButton.dataset.action === 'delete-payment') {
+            await deletePayment(paymentId);
+        }
+    };
+
+    unapprovedList.addEventListener('click', handlePaymentAction);
+    approvedList.addEventListener('click', handlePaymentAction);
+}
 
 // --- 0. セッション情報の取得 ---
 async function loadSessionInfo() {
@@ -203,8 +248,8 @@ function addPayeeRow() {
     div.innerHTML = `
             <select class="p-name">${buildMemberOptions()}</select>
             <input type="number" class="p-amount" placeholder="Amount">
-            <form style="display:inline;" onsubmit="return false;">
-                <button type="button" class="delete-btn" onclick="this.closest('.payee-row').remove()">×</button>
+            <form class="inline-form">
+                <button type="button" class="delete-btn" data-action="delete-payee">×</button>
             </form>
         `;
     container.appendChild(div);
@@ -250,16 +295,16 @@ function render() {
                 </div>
                 <div class="payment-actions">
                     ${!isFullyApproved ?
-                `<form style="display:inline;" onsubmit="return false;">
-                            <button type="button" class="approve-btn" ${!needsMyApproval ? 'disabled' : ''} onclick="approvePayment(${p.payment_id})">
+                `<form class="inline-form">
+                            <button type="button" class="approve-btn" data-action="approve" data-payment-id="${p.payment_id}" ${!needsMyApproval ? 'disabled' : ''}>
                                 ${needsMyApproval ? 'Approve' : 'Pending'}
                             </button>
                         </form>` :
-                `<span style="color:green; font-weight:bold;">✓ Complete</span>`
+                `<span class="complete-message">✓ Complete</span>`
             }
                     ${p.paid_by_user_name === CURRENT_USER ?
-                `<form style="display:inline;" onsubmit="return false;">
-                            <button type="button" class="delete-payment-btn" onclick="deletePayment(${p.payment_id})">Delete</button>
+                `<form class="inline-form">
+                            <button type="button" class="delete-payment-btn" data-action="delete-payment" data-payment-id="${p.payment_id}">Delete</button>
                         </form>` :
                 ''
             }
