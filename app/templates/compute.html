@@ -17,9 +17,9 @@
         </a>
 
         <nav class="navlinks">
-            <a href="{{ url_for('register.start') }}" class=>Login/Sign Up</a>
-            <a href="{{ url_for('about') }}" class=>About</a>
-            <a href="{{ url_for('payment') }}" class=>Compute</a>
+            <a href="{{ url_for('register.start') }}">Login/Sign Up</a>
+            <a href="{{ url_for('about') }}">About</a>
+            <a href="{{ url_for('payment') }}">Compute</a>
         </nav>
     </header>
 
@@ -31,30 +31,32 @@
         </div>
 
         <div id="input-section">
-            <div style="margin-bottom: 15px;">
-                <strong>Title:</strong>
-                <input type="text" id="title" placeholder="Title">
-            </div>
-            <div style="margin-bottom: 15px;">
-                <strong>Payer:</strong>
-                <span id="payer"></span>
-            </div>
-
-            <div style="margin-bottom: 15px;">
-                <strong>Currency:</strong>
-                <select id="currency-select"></select>
-            </div>
-
-            <strong>Payee & Amount:</strong>
-            <div id="payeeListContainer">
-                <div class="payee-row">
-                    <select class="p-name"></select>
-                    <input type="number" class="p-amount" placeholder="Amount">
+            <form id="payment-form">
+                <div class="input-field">
+                    <strong>Title:</strong>
+                    <input type="text" id="title" placeholder="Title">
                 </div>
-            </div>
+                <div class="input-field">
+                    <strong>Payer:</strong>
+                    <span id="payer"></span>
+                </div>
 
-            <button class="add-row-btn" onclick="addPayeeRow()">Add Payee</button>
-            <button class="register-btn" onclick="registerPayment()">Submit the Payment</button>
+                <div class="input-field">
+                    <strong>Currency:</strong>
+                    <select id="currency-select"></select>
+                </div>
+
+                <strong>Payee & Amount:</strong>
+                <div id="payeeListContainer">
+                    <div class="payee-row">
+                        <select class="p-name"></select>
+                        <input type="number" class="p-amount" placeholder="Amount">
+                    </div>
+                </div>
+
+                <button type="button" id="add-payee-btn" class="add-row-btn">Add Payee</button>
+                <button type="submit" class="register-btn">Submit the Payment</button>
+            </form>
         </div>
 
         <h2>Pending Approval</h2>
@@ -64,7 +66,9 @@
         <ul id="approvedList"></ul>
 
         <h2>Settlement</h2>
-        <button class="add-row-btn" style="background:#4a90e2" onclick="calculateMinFlow()">Settle Balances</button>
+        <form id="settlement-form">
+            <button type="submit" class="add-row-btn settlement-btn">Settle Balances</button>
+        </form>
         <div id="Output">No data to display</div>
     </div>
 

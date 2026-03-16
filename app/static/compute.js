@@ -8,11 +8,56 @@ const CURRENCY_OPTIONS = ["JPY", "USD", "EUR", "GBP"];
 let payments = [];
 
 // ページ読み込み時にセッション情報を取得してから初期化する
-window.onload = async () => {
+window.addEventListener('DOMContentLoaded', async () => {
+    setupEventHandlers();
     await loadSessionInfo();
     initializeMemberSelectors();
     await loadPayments();
-};
+});
+
+function setupEventHandlers() {
+    const paymentForm = document.getElementById('payment-form');
+    const settlementForm = document.getElementById('settlement-form');
+    const addPayeeButton = document.getElementById('add-payee-btn');
+    const payeeListContainer = document.getElementById('payeeListContainer');
+    const unapprovedList = document.getElementById('unapprovedList');
+    const approvedList = document.getElementById('approvedList');
+
+    paymentForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await registerPayment();
+    });
+
+    settlementForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        await calculateMinFlow();
+    });
+
+    addPayeeButton.addEventListener('click', addPayeeRow);
+
+    payeeListContainer.addEventListener('click', (event) => {
+        const deletePayeeButton = event.target.closest('[data-action="delete-payee"]');
+        if (!deletePayeeButton) return;
+        const row = deletePayeeButton.closest('.payee-row');
+        if (row) row.remove();
+    });
+
+    const handlePaymentAction = async (event) => {
+        const actionButton = event.target.closest('[data-action]');
+        if (!actionButton) return;
+        const paymentId = Number(actionButton.dataset.paymentId);
+        if (!Number.isFinite(paymentId)) return;
+
+        if (actionButton.dataset.action === 'approve') {
+            await approvePayment(paymentId);
+        } else if (actionButton.dataset.action === 'delete-payment') {
+            await deletePayment(paymentId);
+        }
+    };
+
+    unapprovedList.addEventListener('click', handlePaymentAction);
+    approvedList.addEventListener('click', handlePaymentAction);
+}
 
 // --- 0. セッション情報の取得 ---
 async function loadSessionInfo() {
@@ -203,7 +248,9 @@ function addPayeeRow() {
     div.innerHTML = `
             <select class="p-name">${buildMemberOptions()}</select>
             <input type="number" class="p-amount" placeholder="Amount">
-            <button class="delete-btn" onclick="this.parentElement.remove()">×</button>
+            <form class="inline-form">
+                <button type="button" class="delete-btn" data-action="delete-payee">×</button>
+            </form>
         `;
     container.appendChild(div);
 }
@@ -231,32 +278,45 @@ function render() {
 
         const li = document.createElement('li');
         const currencyCode = p.currency_code || 'JPY';
+        const totalAmountText = formatCurrencyAmount(p.amount_total, currencyCode);
         const detailStr = p.splits
             .map(d => `${d.beneficiary_user_name}(${formatCurrencyAmount(d.amount, currencyCode)})`)
             .join(', ');
 
         // 自分の承認が必要か
         const needsMyApproval = targetNames.includes(CURRENT_USER) && !approvedBy.includes(CURRENT_USER);
+        const approveButtonLabel = needsMyApproval ? 'Approve' : 'Pending';
+        const approveDisabledAttr = needsMyApproval ? '' : 'disabled';
+
+        let approvalActionHtml = `<span class="complete-message">✓ Complete</span>`;
+        if (!isFullyApproved) {
+            approvalActionHtml = `
+                <form class="inline-form">
+                    <button type="button" class="approve-btn" data-action="approve" data-payment-id="${p.payment_id}" ${approveDisabledAttr}>
+                        ${approveButtonLabel}
+                    </button>
+                </form>`;
+        }
+
+        let deleteActionHtml = '';
+        if (p.paid_by_user_name === CURRENT_USER) {
+            deleteActionHtml = `
+                <form class="inline-form">
+                    <button type="button" class="delete-payment-btn" data-action="delete-payment" data-payment-id="${p.payment_id}">Delete</button>
+                </form>`;
+        }
 
         li.innerHTML = `
                 <div class="main-info">
                     <span>${p.title}</span><br>
-                    <span>${p.paid_by_user_name}</span> → ${formatCurrencyAmount(p.amount_total, currencyCode)}<br>
+                    <span>${p.paid_by_user_name}</span> → ${totalAmountText}<br>
 
                     <small class="detail-text">Details: ${detailStr}</small><br>
                     <small class="approval-status">Approved: ${approvedBy.join(', ')}</small>
                 </div>
                 <div class="payment-actions">
-                    ${!isFullyApproved ?
-                `<button class="approve-btn" ${!needsMyApproval ? 'disabled' : ''} onclick="approvePayment(${p.payment_id})">
-                            ${needsMyApproval ? 'Approve' : 'Pending'}
-                        </button>` :
-                `<span style="color:green; font-weight:bold;">✓ Complete</span>`
-            }
-                    ${p.paid_by_user_name === CURRENT_USER ?
-                `<button class="delete-payment-btn" onclick="deletePayment(${p.payment_id})">Delete</button>` :
-                ''
-            }
+                    ${approvalActionHtml}
+                    ${deleteActionHtml}
                 </div>
             `;
 
