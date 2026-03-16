@@ -74,10 +74,8 @@ docker-compose.override.yml
 # =========================
 # MySQL data (重要: 実DBファイルは絶対に管理しない)
 # =========================
-backend/mysql/
-# もし空ディレクトリを残したいなら backend/mysql/.gitkeep を置いて、下を有効化
-#!backend/mysql/.gitkeep
-=======
+mysql/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[codz]
@@ -287,5 +285,4 @@ marimo/_lsp/
 __marimo__/
 
 .DS_Store
-
 mysql/
