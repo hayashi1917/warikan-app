@@ -203,7 +203,9 @@ function addPayeeRow() {
     div.innerHTML = `
             <select class="p-name">${buildMemberOptions()}</select>
             <input type="number" class="p-amount" placeholder="Amount">
-            <button class="delete-btn" onclick="this.parentElement.remove()">×</button>
+            <form style="display:inline;" onsubmit="return false;">
+                <button type="button" class="delete-btn" onclick="this.closest('.payee-row').remove()">×</button>
+            </form>
         `;
     container.appendChild(div);
 }
@@ -248,13 +250,17 @@ function render() {
                 </div>
                 <div class="payment-actions">
                     ${!isFullyApproved ?
-                `<button class="approve-btn" ${!needsMyApproval ? 'disabled' : ''} onclick="approvePayment(${p.payment_id})">
-                            ${needsMyApproval ? 'Approve' : 'Pending'}
-                        </button>` :
+                `<form style="display:inline;" onsubmit="return false;">
+                            <button type="button" class="approve-btn" ${!needsMyApproval ? 'disabled' : ''} onclick="approvePayment(${p.payment_id})">
+                                ${needsMyApproval ? 'Approve' : 'Pending'}
+                            </button>
+                        </form>` :
                 `<span style="color:green; font-weight:bold;">✓ Complete</span>`
             }
                     ${p.paid_by_user_name === CURRENT_USER ?
-                `<button class="delete-payment-btn" onclick="deletePayment(${p.payment_id})">Delete</button>` :
+                `<form style="display:inline;" onsubmit="return false;">
+                            <button type="button" class="delete-payment-btn" onclick="deletePayment(${p.payment_id})">Delete</button>
+                        </form>` :
                 ''
             }
                 </div>
