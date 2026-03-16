@@ -278,36 +278,45 @@ function render() {
 
         const li = document.createElement('li');
         const currencyCode = p.currency_code || 'JPY';
+        const totalAmountText = formatCurrencyAmount(p.amount_total, currencyCode);
         const detailStr = p.splits
             .map(d => `${d.beneficiary_user_name}(${formatCurrencyAmount(d.amount, currencyCode)})`)
             .join(', ');
 
         // 自分の承認が必要か
         const needsMyApproval = targetNames.includes(CURRENT_USER) && !approvedBy.includes(CURRENT_USER);
+        const approveButtonLabel = needsMyApproval ? 'Approve' : 'Pending';
+        const approveDisabledAttr = needsMyApproval ? '' : 'disabled';
+
+        let approvalActionHtml = `<span class="complete-message">✓ Complete</span>`;
+        if (!isFullyApproved) {
+            approvalActionHtml = `
+                <form class="inline-form">
+                    <button type="button" class="approve-btn" data-action="approve" data-payment-id="${p.payment_id}" ${approveDisabledAttr}>
+                        ${approveButtonLabel}
+                    </button>
+                </form>`;
+        }
+
+        let deleteActionHtml = '';
+        if (p.paid_by_user_name === CURRENT_USER) {
+            deleteActionHtml = `
+                <form class="inline-form">
+                    <button type="button" class="delete-payment-btn" data-action="delete-payment" data-payment-id="${p.payment_id}">Delete</button>
+                </form>`;
+        }
 
         li.innerHTML = `
                 <div class="main-info">
                     <span>${p.title}</span><br>
-                    <span>${p.paid_by_user_name}</span> → ${formatCurrencyAmount(p.amount_total, currencyCode)}<br>
+                    <span>${p.paid_by_user_name}</span> → ${totalAmountText}<br>
 
                     <small class="detail-text">Details: ${detailStr}</small><br>
                     <small class="approval-status">Approved: ${approvedBy.join(', ')}</small>
                 </div>
                 <div class="payment-actions">
-                    ${!isFullyApproved ?
-                `<form class="inline-form">
-                            <button type="button" class="approve-btn" data-action="approve" data-payment-id="${p.payment_id}" ${!needsMyApproval ? 'disabled' : ''}>
-                                ${needsMyApproval ? 'Approve' : 'Pending'}
-                            </button>
-                        </form>` :
-                `<span class="complete-message">✓ Complete</span>`
-            }
-                    ${p.paid_by_user_name === CURRENT_USER ?
-                `<form class="inline-form">
-                            <button type="button" class="delete-payment-btn" data-action="delete-payment" data-payment-id="${p.payment_id}">Delete</button>
-                        </form>` :
-                ''
-            }
+                    ${approvalActionHtml}
+                    ${deleteActionHtml}
                 </div>
             `;
 
