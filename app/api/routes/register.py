@@ -15,7 +15,7 @@ router = APIRouter(
 
 @router.get("/start", name="register.start")
 def start(request: Request):
-    return templates.TemplateResponse("start.html", {"request": request})
+    return templates.TemplateResponse(request, "start.html")
 
 
 @router.get("/me", name="register.me")

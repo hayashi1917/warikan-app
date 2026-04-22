@@ -37,7 +37,7 @@ def payment(request: Request):
     if not request.session.get("group_name") or not request.session.get("user_name"):
         return RedirectResponse(url="/register/start", status_code=303)
 
-    return templates.TemplateResponse("compute.html", {"request": request})
+    return templates.TemplateResponse(request, "compute.html")
 
 
 @router.get("/members", name="payment_members")

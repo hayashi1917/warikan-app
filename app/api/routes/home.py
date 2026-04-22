@@ -13,10 +13,10 @@ router = APIRouter(
 @router.get("/", name="home")
 def home(request: Request):
     """トップページを表示する。"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @router.get("/about", name="about")
 def about(request: Request):
     """About ページを表示する。"""
-    return templates.TemplateResponse("about.html", {"request": request})
+    return templates.TemplateResponse(request, "about.html")
