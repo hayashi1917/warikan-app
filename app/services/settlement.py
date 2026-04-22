@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Dict, List, Tuple
 
-from app.db.db import mysql_connection
+from app.db.db import db_connection
 
 
 @dataclass
@@ -61,7 +61,7 @@ def _minimize_settlements(net: Dict[str, Decimal]) -> List[Dict[str, str | float
 
 
 def _fetch_approved_split_records(group_id: int) -> List[PaymentSplitRecord]:
-    with mysql_connection() as conn:
+    with db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -71,15 +71,15 @@ def _fetch_approved_split_records(group_id: int) -> List[PaymentSplitRecord]:
                     p.exchange_rate,
                     ps.beneficiary_user_name,
                     ps.amount
-                FROM `payments` p
-                INNER JOIN `payment_splits` ps
+                FROM payments p
+                INNER JOIN payment_splits ps
                     ON p.payment_id = ps.payment_id
                 WHERE
                     p.group_id = %s
                     AND ps.group_id = %s
                     AND p.payment_id IN (
                         SELECT payment_id
-                        FROM `payment_splits`
+                        FROM payment_splits
                         WHERE group_id = %s
                         GROUP BY payment_id
                         HAVING SUM(CASE WHEN approved = FALSE THEN 1 ELSE 0 END) = 0
