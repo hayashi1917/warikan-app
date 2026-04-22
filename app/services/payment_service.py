@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-from app.db.db import mysql_connection
+from app.db.db import db_connection
 
 FRANKFURTER_BASE_URL = "https://api.frankfurter.dev/v1"
 
@@ -64,22 +64,26 @@ def create_payment(
     splits: List[Dict[str, Any]],
 ) -> Tuple[bool, int | str]:
     try:
-        with mysql_connection() as conn:
+        with db_connection() as conn:
             try:
                 with conn.cursor() as cur:
                     cur.execute(
                         """
-                        INSERT INTO `payments` (group_id, paid_by_user_name, title, amount_total, currency_code, exchange_rate)
+                        INSERT INTO payments (group_id, paid_by_user_name, title, amount_total, currency_code, exchange_rate)
                         VALUES (%s, %s, %s, %s, %s, %s)
+                        RETURNING payment_id
                         """,
                         (group_id, login_user_name, title, amount_total, currency_code.upper(), exchange_rate),
                     )
-                    payment_id = int(cur.lastrowid)
+                    row = cur.fetchone()
+                    if row is None:
+                        raise RuntimeError("failed to create payment")
+                    payment_id = int(row["payment_id"])
 
                     for split in splits:
                         cur.execute(
                             """
-                            INSERT INTO `payment_splits` (payment_id, group_id, beneficiary_user_name, amount)
+                            INSERT INTO payment_splits (payment_id, group_id, beneficiary_user_name, amount)
                             VALUES (%s, %s, %s, %s)
                             """,
                             (payment_id, group_id, split["beneficiary_user_name"], split["amount"]),
@@ -97,11 +101,11 @@ def create_payment(
 # 支払い承認
 # 現在ログイン中のユーザーが自分の分担のみ承認できるように条件を限定する。
 def authenticate_payment_by_current_user(group_id: int, payment_id: int, current_user_name: str) -> bool:
-    with mysql_connection() as conn:
+    with db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
-                UPDATE `payment_splits`
+                UPDATE payment_splits
                 SET approved = TRUE
                 WHERE payment_id = %s AND group_id = %s AND beneficiary_user_name = %s
                 """,
@@ -116,11 +120,11 @@ def authenticate_payment_by_current_user(group_id: int, payment_id: int, current
 # 作成者本人のみ削除可能にすることで、他ユーザーによる誤操作を防止する。
 def delete_payment(group_id: int, payment_id: int, current_user_name: str) -> Tuple[bool, str]:
     try:
-        with mysql_connection() as conn:
+        with db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    DELETE FROM `payments`
+                    DELETE FROM payments
                     WHERE payment_id = %s AND group_id = %s AND paid_by_user_name = %s
                     """,
                     (payment_id, group_id, current_user_name),
@@ -138,7 +142,7 @@ def delete_payment(group_id: int, payment_id: int, current_user_name: str) -> Tu
 # グループ支払い一覧取得
 # DB 正規化された明細を API 向けの読みやすい構造に整形して返却する。
 def list_group_payments(group_id: int) -> List[Dict[str, Any]]:
-    with mysql_connection() as conn:
+    with db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
@@ -153,8 +157,8 @@ def list_group_payments(group_id: int) -> List[Dict[str, Any]]:
                     ps.beneficiary_user_name,
                     ps.amount,
                     ps.approved
-                FROM `payments` p
-                INNER JOIN `payment_splits` ps
+                FROM payments p
+                INNER JOIN payment_splits ps
                     ON p.payment_id = ps.payment_id
                 WHERE p.group_id = %s
                 ORDER BY p.payment_id DESC, ps.beneficiary_user_name ASC

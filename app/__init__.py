@@ -1,0 +1,1 @@
+"""Warikan FastAPI application package."""

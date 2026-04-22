@@ -6,29 +6,31 @@
 
 from typing import Any, Dict, List, Optional
 
-import pymysql
-import pymysql.cursors
+import psycopg
 
 from app.auth.auth import hash_password, verify_password
-from app.db.db import ensure_schema, mysql_connection
+from app.db.db import db_connection, ensure_schema
 
 
 # グループ作成
 # ルートハンドラ側に SQL 詳細を漏らさないため、内部関数として切り出している。
-def _create_group(cur: pymysql.cursors.Cursor, group_name: str) -> int:
-    cur.execute("INSERT INTO `groups` (group_name) VALUES (%s)", (group_name,))
-    return int(cur.lastrowid)
+def _create_group(cur: psycopg.Cursor, group_name: str) -> int:
+    cur.execute("INSERT INTO groups (group_name) VALUES (%s) RETURNING group_id", (group_name,))
+    row = cur.fetchone()
+    if row is None:
+        raise RuntimeError("failed to create group")
+    return int(row["group_id"])
 
 
 # グループIDからグループ情報を取得
 # 返却フォーマットを固定することで、呼び出し元が DB カラム変更の影響を受けにくくなる。
 def get_group(group_id: int) -> Optional[Dict[str, Any]]:
-    with mysql_connection() as conn:
+    with db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT group_id, group_name
-                FROM `groups`
+                FROM groups
                 WHERE group_id = %s
                 LIMIT 1
                 """,
@@ -40,12 +42,12 @@ def get_group(group_id: int) -> Optional[Dict[str, Any]]:
 
 # グループ名からグループ情報を取得
 def get_group_by_name(group_name: str) -> Optional[Dict[str, Any]]:
-    with mysql_connection() as conn:
+    with db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT group_id, group_name
-                FROM `groups`
+                FROM groups
                 WHERE group_name = %s
                 LIMIT 1
                 """,
@@ -61,15 +63,15 @@ def create_group_with_leader(group_name: str, leader_user_name: str, leader_pass
     ensure_schema()
 
     try:
-        with mysql_connection() as conn:
+        with db_connection() as conn:
             with conn.cursor() as cur:
                 group_id = _create_group(cur, group_name)
                 cur.execute(
-                    "INSERT INTO `users` (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
+                    "INSERT INTO users (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
                     (group_id, leader_user_name, hash_password(leader_password)),
                 )
             conn.commit()
-    except pymysql.IntegrityError:
+    except psycopg.IntegrityError:
         raise ValueError("group_name already exists")
 
     return {"group_id": group_id, "group_name": group_name, "leader_user_name": leader_user_name}
@@ -80,14 +82,14 @@ def create_group_with_leader(group_name: str, leader_user_name: str, leader_pass
 def create_user(group_id: int, user_name: str, password: str) -> Dict[str, Any]:
     password_hash = hash_password(password)
     try:
-        with mysql_connection() as conn:
+        with db_connection() as conn:
             with conn.cursor() as cur:
                 cur.execute(
-                    "INSERT INTO `users` (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
+                    "INSERT INTO users (group_id, user_name, password_hash) VALUES (%s, %s, %s)",
                     (group_id, user_name, password_hash),
                 )
             conn.commit()
-    except pymysql.IntegrityError:
+    except psycopg.IntegrityError:
         raise ValueError("user_name already exists in this group")
     return {"group_id": group_id, "user_name": user_name}
 
@@ -95,12 +97,12 @@ def create_user(group_id: int, user_name: str, password: str) -> Dict[str, Any]:
 # グループに所属する全ユーザーを取得
 # SQL パラメータは必ずタプルにし、ドライバ差異によるバグを防ぐ。
 def get_users(group_id: int) -> List[Dict[str, Any]]:
-    with mysql_connection() as conn:
+    with db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT group_id, user_name
-                FROM `users`
+                FROM users
                 WHERE group_id = %s
                 ORDER BY user_name ASC
                 """,
@@ -112,12 +114,12 @@ def get_users(group_id: int) -> List[Dict[str, Any]]:
 
 # グループ所属ユーザーをユーザー名で取得
 def get_user(group_id: int, user_name: str) -> Optional[Dict[str, Any]]:
-    with mysql_connection() as conn:
+    with db_connection() as conn:
         with conn.cursor() as cur:
             cur.execute(
                 """
                 SELECT group_id, user_name, password_hash
-                FROM `users`
+                FROM users
                 WHERE group_id = %s AND user_name = %s
                 LIMIT 1
                 """,
