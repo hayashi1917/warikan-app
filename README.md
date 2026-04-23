@@ -26,10 +26,17 @@ https://warikan-app-03e3.onrender.com/
 
 ## スクリーンショット
 
-- グループ作成／参加画面/ログイン画面
+- グループ作成／参加画面/ログイン
+  <img width="568" height="636" alt="スクリーンショット 2026-04-23 16 20 28" src="https://github.com/user-attachments/assets/7591e14d-b0ec-45c0-8794-34592972b262" />
+
 - 支払い登録画面
+  <img width="611" height="745" alt="スクリーンショット 2026-04-23 16 20 53" src="https://github.com/user-attachments/assets/d1f20ba6-8966-48d9-8ef4-0c37fb6fbd19" />
+
 - 未承認／承認済み支払い一覧
+  <img width="475" height="575" alt="スクリーンショット 2026-04-23 16 21 20" src="https://github.com/user-attachments/assets/6c539c05-5573-4034-a70b-c8e31529fcf9" />
+
 - 最小化された精算結果画面
+  <img width="527" height="578" alt="スクリーンショット 2026-04-23 16 21 56" src="https://github.com/user-attachments/assets/cb3c8ce8-7a0c-463a-a754-158c784d9bb3" />
 
 ## 使用技術について
 
@@ -132,8 +139,7 @@ http://localhost:8000
 - 精算ロジックではユーザーごとの差額を集計し、支払う人と受け取る人をマッチングすることで、お金の移動回数を抑えています。
 
 ### ER図
-
-
+<img width="1448" height="1086" alt="ChatGPT Image 2026年4月23日 16_23_28" src="https://github.com/user-attachments/assets/b68f9dd6-7b2f-4e73-9e5b-5639b07dfd95" />
 
 ## API一覧
 
