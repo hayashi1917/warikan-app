@@ -1,25 +1,22 @@
 services:
   db:
-    image: mysql:8.0
-    container_name: warikan-mysql
-    env_file: .env
-
+    image: postgres:16
+    container_name: warikan-postgres
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-warikan_app}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
       TZ: Asia/Tokyo
     ports:
-      - "3306:3306"
+      - "5432:5432"
     volumes:
-      - ./mysql:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
-      interval: 1m30s
-      timeout: 30s
+      test: ["CMD-SHELL", "pg_isready -U \"${POSTGRES_USER:-postgres}\" -d \"${POSTGRES_DB:-warikan_app}\""]
+      interval: 10s
+      timeout: 5s
       retries: 5
-      start_period: 30s
+      start_period: 10s
 
   api:
     build: 
@@ -27,12 +24,9 @@ services:
       dockerfile: Dockerfile.local
     
     container_name: warikan-api
-
-    env_file: .env
-
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      MYSQL_HOST: db
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-password}@db:5432/${POSTGRES_DB:-warikan_app}
+      SESSION_SECRET_KEY: ${SESSION_SECRET_KEY:-replace-with-a-random-secret}
     ports:
       - "8000:8000"
     depends_on:
@@ -43,4 +37,4 @@ services:
       - ./:/app
   
 volumes:
-  mysql:
+  postgres_data:

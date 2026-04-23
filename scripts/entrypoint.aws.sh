@@ -5,28 +5,17 @@ echo "Waiting for database..."
 python - <<'PY'
 import os
 import time
-import pymysql
-from urllib.parse import urlparse
 
-url = os.environ.get("DATABASE_URL", "")
-u = urlparse(url.replace("mysql+pymysql", "mysql"))
+import psycopg
 
-user = u.username
-password = u.password
-host = u.hostname
-port = u.port or 3306
-db = u.path.lstrip("/") if u.path else None
+database_url = os.environ.get("DATABASE_URL")
+if not database_url:
+    raise SystemExit("DATABASE_URL is not set")
 
 for i in range(30):
     try:
-        conn = pymysql.connect(
-            host=host,
-            user=user,
-            password=password,
-            database=db,
-            port=port
-        )
-        conn.close()
+        with psycopg.connect(database_url, connect_timeout=3):
+            pass
         print("Database is up!")
         break
     except Exception as e:
