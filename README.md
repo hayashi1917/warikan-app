@@ -45,6 +45,10 @@
 ## アプリ公開URL
 https://warikan-app-03e3.onrender.com/
 
+| 仮グループ名 |仮ユーザーネーム | 仮パスワード |
+| --- | --- | --- |
+| test | test_user | test_password |
+
 ## 目次
 
 - [開発した背景](#開発した背景)
